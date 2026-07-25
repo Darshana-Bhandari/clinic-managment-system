@@ -11,12 +11,12 @@ import PatientLayout from '../components/layout/PatientLayout';
 // Public pages
 import Home from '../pages/Home';
 import Doctor from '../pages/Doctor';
-import DoctorDetail from '../pages/DoctorDetail';
+import DoctorDetails from "../pages/DoctorDetails";
 import About from '../pages/About';
 import Contact from '../pages/Contact';
 import NotFound from '../pages/Error';
-import Services from '../pages/Services';
-import ServiceDetail from '../pages/ServiceDetail';
+import Service from '../pages/Service';
+import ServiceDetails from '../pages/ServiceDetails';
 import Booking from '../pages/Booking';
 
 // Dashboard pages
@@ -49,11 +49,14 @@ const RouteWrapper = ({ children }) => (
 
 const ProtectedRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('auth_token');
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
   return children;
 };
+
 
 const router = createBrowserRouter([
   // ---- Public website ----
@@ -63,18 +66,36 @@ const router = createBrowserRouter([
     errorElement: <NotFound />,
     children: [
       { index: true, element: <RouteWrapper><Home /></RouteWrapper> },
+
       { path: 'doctors', element: <RouteWrapper><Doctor /></RouteWrapper> },
-      { path: 'doctors/:id', element: <RouteWrapper><DoctorDetail /></RouteWrapper> },
-      { path: 'services', element: <RouteWrapper><Services /></RouteWrapper> },
-      { path: 'services/:serviceId', element: <RouteWrapper><ServiceDetail /></RouteWrapper> },
+
+      { 
+        path: 'doctors/:id', 
+        element: <RouteWrapper><DoctorDetails /></RouteWrapper> 
+      },
+
+      { 
+        path: 'services', 
+        element: <RouteWrapper><Service /></RouteWrapper> 
+      },
+
+      { 
+        path: 'services/:serviceId', 
+        element: <RouteWrapper><ServiceDetails /></RouteWrapper> 
+      },
+
       { path: 'about', element: <RouteWrapper><About /></RouteWrapper> },
+
       { path: 'contact', element: <RouteWrapper><Contact /></RouteWrapper> },
+
       { path: 'book', element: <RouteWrapper><Booking /></RouteWrapper> },
+
       { path: 'home', element: <Navigate to="/" replace /> },
     ],
   },
 
-  // ---- Authenticated dashboards (Admin, Staff, Patient) ----
+
+  // ---- Admin Dashboard ----
   {
     path: '/admin',
     element: (
@@ -90,6 +111,9 @@ const router = createBrowserRouter([
       { path: 'settings', element: <AdminSettings /> },
     ],
   },
+
+
+  // ---- Staff Dashboard ----
   {
     path: '/staff',
     element: (
@@ -107,6 +131,9 @@ const router = createBrowserRouter([
       { path: 'settings', element: <StaffSettings /> },
     ],
   },
+
+
+  // ---- Patient Dashboard ----
   {
     path: '/patient',
     element: (
@@ -121,6 +148,7 @@ const router = createBrowserRouter([
     ],
   },
 
+
   // ---- Auth ----
   {
     path: '/login',
@@ -131,24 +159,48 @@ const router = createBrowserRouter([
         element: (
           <RouteWrapper>
             <div className="space-y-4">
+
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Email or phone</label>
-                <input type="text" placeholder="you@example.com" className="input" />
+                <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Email or phone
+                </label>
+
+                <input
+                  type="text"
+                  placeholder="you@example.com"
+                  className="input"
+                />
               </div>
+
+
               <div>
-                <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
-                <input type="password" placeholder="••••••••" className="input" />
+                <label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Password
+                </label>
+
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  className="input"
+                />
               </div>
+
+
               <button
                 onClick={() => {
                   localStorage.setItem('auth_token', 'demo_token');
-                  window.location.href = '/dashboard';
+                  window.location.href = '/admin';
                 }}
                 className="btn btn-primary btn-full"
               >
                 Sign in
               </button>
-              <p className="text-center text-xs text-slate-400">Demo mode — any credentials will sign you in.</p>
+
+
+              <p className="text-center text-xs text-slate-400">
+                Demo mode — any credentials will sign you in.
+              </p>
+
             </div>
           </RouteWrapper>
         ),
@@ -156,9 +208,18 @@ const router = createBrowserRouter([
     ],
   },
 
-  { path: '*', element: <NotFound /> },
+
+  // ---- Not Found ----
+  {
+    path: '*',
+    element: <NotFound />
+  },
 ]);
 
-const AppRouter = () => <RouterProvider router={router} />;
+
+const AppRouter = () => (
+  <RouterProvider router={router} />
+);
+
 
 export default AppRouter;
