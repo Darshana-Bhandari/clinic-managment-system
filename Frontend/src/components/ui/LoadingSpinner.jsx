@@ -1,3 +1,4 @@
+import React from 'react';
 
 const LoadingSpinner = ({ size = 'md', className = '', text = '' }) => {
   const sizeClasses = {
@@ -8,8 +9,8 @@ const LoadingSpinner = ({ size = 'md', className = '', text = '' }) => {
 
   return (
     <div className={`flex-center flex-col gap-3 ${className}`}>
-      <div className={`spinner ${sizeClasses[size]}`} />
-      {text && <p className="text-gray-500 text-sm">{text}</p>}
+      <div className={`spinner ${sizeClasses[size] || ''}`} />
+      {text && <p className="text-sm text-gray-500">{text}</p>}
     </div>
   );
 };
