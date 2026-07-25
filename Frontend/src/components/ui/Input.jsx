@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import React, { forwardRef } from 'react';
 
 const Input = forwardRef(({
   label,
@@ -21,14 +21,14 @@ const Input = forwardRef(({
   return (
     <div className="w-full">
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label className="mb-1.5 block text-sm font-medium text-gray-700">
           {label}
-          {required && <span className="text-danger ml-1">*</span>}
+          {required && <span className="ml-1 text-danger">*</span>}
         </label>
       )}
       <div className="relative">
         {icon && iconPosition === 'left' && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 items-center text-gray-400">
             {icon}
           </span>
         )}
@@ -43,7 +43,7 @@ const Input = forwardRef(({
           {...props}
         />
         {icon && iconPosition === 'right' && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <span className="pointer-events-none absolute right-3 top-1/2 flex -translate-y-1/2 items-center text-gray-400">
             {icon}
           </span>
         )}
