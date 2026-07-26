@@ -1,10 +1,10 @@
-import React from 'react';
+
 import { Download, TrendingUp, CalendarRange } from 'lucide-react';
 import SectionCard from '../../../components/sections/SectionCard';
 import AreaChart from '../../../components/sections/AreaChart';
 import DonutChart from '../../../components/sections/DonutChart';
 import BarList from '../../../components/sections/BarList';
-import StatCard from '../../../components/sections/StatCard';
+import StatCard from '../../../components/sections/StatCar';
 import { revenueTrend, bookingSource, paymentMix, doctorLoad, currency } from '../../../utils/dashboardData';
 
 const Reports = () => {

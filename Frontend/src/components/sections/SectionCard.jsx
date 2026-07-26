@@ -1,4 +1,4 @@
-import React from 'react';
+
 
 /** Titled panel used to frame dashboard widgets. */
 const SectionCard = ({ title, subtitle, action, children, className = '', bodyClassName = '' }) => (

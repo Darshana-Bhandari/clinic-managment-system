@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { ThemeProvider } from './contexts/ThemeContext';
 import { DoctorProvider } from './contexts/DoctorContext';
 import AppRouter from './Routes/AppRouter'

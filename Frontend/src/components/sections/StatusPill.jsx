@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { statusVariant } from '../../utils/dashboardData';
 
 /** Small status pill that maps an appointment/invoice status to a badge tone. */

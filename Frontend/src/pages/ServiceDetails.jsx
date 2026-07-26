@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, SearchX, Check, Stethoscope, CalendarDays, CalendarPlus, Heart, Sparkles } from 'lucide-react';
 import Card from '../components/ui/Card';

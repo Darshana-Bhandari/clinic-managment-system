@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+
+import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import Topbar from './Topbar';
+import Topbas from './Topbas';
 
 import {
   CalendarDays,
@@ -28,7 +29,7 @@ const PatientLayout = () => {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} navItems={navItems} title="Patient Portal" />
 
       <div className="lg:pl-72">
-        <Topbar onMenu={() => setSidebarOpen(true)} title={meta.title} subtitle={meta.subtitle} />
+        <Topbas onMenu={() => setSidebarOpen(true)} title={meta.title} subtitle={meta.subtitle} />
         <main className="mx-auto max-w-7xl p-4 sm:p-6">
           <Outlet />
         </main>

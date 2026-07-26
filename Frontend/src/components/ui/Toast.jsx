@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+
 import { CheckCircle2, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 
 const config = {

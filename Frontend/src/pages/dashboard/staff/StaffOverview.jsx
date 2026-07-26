@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Users,
   CalendarDays,
@@ -112,7 +112,7 @@ const StaffOverview = () => {
       )}
 
       {/* Welcome Banner & Quick Action Buttons */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-700 via-primary-600 to-teal-700 p-6 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl bg-linear-to-r from-primary-700 via-primary-600 to-teal-700 p-6 text-white shadow-xl">
         <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold backdrop-blur">

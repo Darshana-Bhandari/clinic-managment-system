@@ -1,19 +1,6 @@
-import React from 'react';
+
 import { NavLink, Link } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  CalendarDays,
-  Users,
-  Stethoscope,
-  ListOrdered,
-  Receipt,
-  BarChart3,
-  Settings,
-  Plus,
-  ArrowLeft,
-  LogOut,
-  X,
-} from 'lucide-react';
+import { Plus, ArrowLeft, LogOut, X } from 'lucide-react';
 
 const Sidebar = ({ open, onClose, navItems, title = 'Clinic' }) => {
   return (

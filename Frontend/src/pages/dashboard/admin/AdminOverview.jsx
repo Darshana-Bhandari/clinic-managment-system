@@ -1,6 +1,7 @@
 
 
-import React, { useState } from 'react';
+
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CalendarCheck,
@@ -15,7 +16,7 @@ import {
   CreditCard,
   Check,
 } from 'lucide-react';
-import StatCard from '../../../components/sections/StatCard';
+import StatCard from '../../../components/sections/StatCar';
 import SectionCard from '../../../components/sections/SectionCard';
 import AreaChart from '../../../components/sections/AreaChart';
 import DonutChart from '../../../components/sections/DonutChart';

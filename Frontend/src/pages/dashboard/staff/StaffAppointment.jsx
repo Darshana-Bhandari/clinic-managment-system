@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+
+import { useMemo, useState } from 'react';
 import { Search, Filter, CalendarPlus, Globe, Building2, X, CheckCircle2 } from 'lucide-react';
 import SectionCard from '../../../components/sections/SectionCard';
 import StatusPill from '../../../components/sections/StatusPill';

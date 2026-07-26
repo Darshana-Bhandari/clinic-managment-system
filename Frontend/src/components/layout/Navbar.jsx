@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home as HomeIcon,
@@ -14,7 +15,6 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
-  UserPlus,
   ArrowRight,
   Plus,
   CalendarPlus,
@@ -49,7 +49,7 @@ const Navbar = () => {
   const { theme, toggleTheme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem('auth_token')));
   const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -57,10 +57,6 @@ const Navbar = () => {
     handleScroll();
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem('auth_token'));
   }, []);
 
   useEffect(() => {
@@ -79,17 +75,17 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isServicesDropdownOpen]);
 
-  // Close mobile menu on route change
-  useEffect(() => {
+  const isActive = (path) => location.pathname === path;
+
+  const closeMenus = () => {
     setIsMenuOpen(false);
     setIsServicesDropdownOpen(false);
-  }, [location.pathname]);
-
-  const isActive = (path) => location.pathname === path;
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     setIsAuthenticated(false);
+    closeMenus();
     navigate('/');
   };
 
@@ -121,7 +117,10 @@ const Navbar = () => {
                 return (
                   <div key={link.path} className="services-dropdown relative">
                     <button
-                      onClick={() => setIsServicesDropdownOpen((v) => !v)}
+                      onClick={() => {
+                        setIsServicesDropdownOpen((v) => !v);
+                        setIsMenuOpen(false);
+                      }}
                       onMouseEnter={() => setIsServicesDropdownOpen(true)}
                       className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
                         location.pathname.startsWith('/services')
@@ -150,7 +149,10 @@ const Navbar = () => {
                               key={service.path}
                               to={service.path}
                               className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-primary-50 dark:hover:bg-slate-800/60"
-                              onClick={() => setIsServicesDropdownOpen(false)}
+                              onClick={() => {
+                                setIsServicesDropdownOpen(false);
+                                setIsMenuOpen(false);
+                              }}
                             >
                               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-lg dark:bg-slate-800">
                                 {service.emoji}
@@ -253,6 +255,7 @@ const Navbar = () => {
                   <Link
                     key={link.path}
                     to={link.path}
+                    onClick={() => setIsMenuOpen(false)}
                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                       isActive(link.path)
                         ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'

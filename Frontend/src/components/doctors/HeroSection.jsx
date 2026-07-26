@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar,
@@ -23,12 +24,6 @@ import Carousel from '../ui/Carousel';
  */
 
 const SPECIALTIES = ['General Physician', 'Dermatology', 'Pediatrics', 'Dental', 'Gynecology'];
-
-const credentials = [
-  'No registration fees',
-  'Direct SMS confirmations',
-  'Instant live-queue tokens',
-];
 
 /* ---------- Themed preview cards, one per slide ---------- */
 

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { FileText, Download, FilePlus, Activity, ShieldAlert } from 'lucide-react';
 
 const medicalRecords = [

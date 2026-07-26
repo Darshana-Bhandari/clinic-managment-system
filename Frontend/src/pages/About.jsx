@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link } from 'react-router-dom';
 import { HeartHandshake, Microscope, ShieldCheck, Globe2, ArrowRight, Building2 } from 'lucide-react';
 import Card from '../components/ui/Card';

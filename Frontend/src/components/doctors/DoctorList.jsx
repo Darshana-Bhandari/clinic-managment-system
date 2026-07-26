@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
+
+import { useEffect, useMemo, useState } from 'react';
 import { SearchX, ChevronLeft, ChevronRight } from 'lucide-react';
 import DoctorCard from './DoctorCard';
 import { doctorsData } from '../../utils/dummyData';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+
 import SearchBar from '../components/doctors/SearchBar';
 import FilterSection from '../components/doctors/FilterSection';
 import DoctorsList from '../components/doctors/DoctorList';

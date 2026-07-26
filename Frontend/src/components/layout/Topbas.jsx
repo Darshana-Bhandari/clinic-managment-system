@@ -1,5 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Menu, Search, Bell, Moon, Sun, ChevronDown, User, Settings, HelpCircle, LogOut, CheckCircle2 } from 'lucide-react';
+
+import { useEffect, useRef, useState } from 'react';
+import { Menu, Search, Bell, Moon, Sun, ChevronDown, User, Settings, HelpCircle, LogOut } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { activityFeed } from '../../utils/dashboardData';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +10,6 @@ const Topbar = ({ onMenu, title, subtitle }) => {
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null); // 'profile' | 'settings' | 'help'
-  const [toast, setToast] = useState('');
   const ref = useRef(null);
   const navigate = useNavigate();
 

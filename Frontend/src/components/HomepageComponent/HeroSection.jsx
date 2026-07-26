@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Search, Check, Clock, Stethoscope, ArrowRight, Siren, HeartPulse } from 'lucide-react';
 import Carousel from '../ui/Carousel';

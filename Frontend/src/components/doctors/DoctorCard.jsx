@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Building2, Briefcase, Wallet, ArrowRight, CircleDot } from 'lucide-react';
 import Card from '../ui/Card';

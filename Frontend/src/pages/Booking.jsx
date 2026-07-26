@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, CheckCircle2, User, Calendar, Clock, CreditCard, ChevronLeft } from 'lucide-react';
 import { doctorsData } from '../utils/dummyData';

@@ -1,5 +1,4 @@
 
-import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -152,7 +151,7 @@ const DoctorDetail = () => {
         {/* Booking sidebar */}
         <div className="lg:sticky lg:top-24 lg:self-start">
           <Card className="p-6" hoverable={false}>
-            <div className="rounded-2xl bg-gradient-to-br from-primary-50 to-teal-50/60 p-5 text-center dark:from-slate-800 dark:to-slate-800/40">
+            <div className="rounded-2xl bg-linear-to-br from-primary-50 to-teal-50/60 p-5 text-center dark:from-slate-800 dark:to-slate-800/40">
               <p className="text-sm text-slate-500">Consultation fee</p>
               <p className="mt-1 font-display text-3xl font-bold text-slate-900 dark:text-white">Rs. {doctor.consultationFee}</p>
               <p className="mt-1 text-xs text-slate-500">per visit · {doctor.availability}</p>
