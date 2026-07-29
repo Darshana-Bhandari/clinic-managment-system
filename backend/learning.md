@@ -247,4 +247,29 @@ res.status(500).json({
 
 
 
+Controllers (Business Logic)
+
+
+A controller is a server-side function that receives an HTTP request,
+processes the request by executing the application's business logic,
+interacts with the database or services if needed, and sends an
+appropriate HTTP response back to the client.
+
+Responsibilities of a Controller:
+- Receive HTTP requests
+- Validate request data
+- Execute business logic
+- Interact with the database
+- Send HTTP responses
+
+Example:
+
+const getDoctors = (req, res) => {
+    res.status(200).json({
+        message: "Doctors fetched successfully"
+    });
+};
+
+
 */
+
