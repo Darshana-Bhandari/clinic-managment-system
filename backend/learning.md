@@ -110,4 +110,141 @@ PUT    /students/1
 DELETE /students/1
 
 
+
+HTTP Status Codes
+
+
+An HTTP Status Code is a 3-digit number returned by the server
+to indicate whether a client's request was successful or failed.
+
+
+Status Code Categories
+
+
+1xx → Informational Responses
+2xx → Success
+3xx → Redirection
+4xx → Client Errors
+5xx → Server Errors
+
+
+Common HTTP Status Codes
+
+
+----------------------------------------
+200 OK
+----------------------------------------
+
+The request was completed successfully.
+
+Common Uses:
+- Fetching data (GET request)
+- Successful update (PUT/PATCH)
+- Successful delete (can also use 204)
+
+Example:
+
+res.status(200).json({
+    message: "Doctors data fetched successfully"
+});
+
+----------------------------------------
+201 Created
+----------------------------------------
+
+The request was successful, and a new resource
+was created.
+
+Common Uses:
+- Creating new data (POST request)
+
+Example:
+
+res.status(201).json({
+    message: "Doctor created successfully"
+});
+
+----------------------------------------
+204 No Content
+----------------------------------------
+
+The request was successful, but the server
+does not return any response body.
+
+Common Uses:
+- Successful DELETE request
+- Successful operation with no data to return
+
+Example:
+
+res.status(204).send();
+
+----------------------------------------
+400 Bad Request
+----------------------------------------
+
+The client sent invalid, missing, or incomplete data.
+
+Common Uses:
+- Required fields are missing
+- Invalid input values
+- Validation errors
+
+Example:
+
+res.status(400).json({
+    message: "Name is required"
+});
+
+----------------------------------------
+401 Unauthorized
+----------------------------------------
+
+The client is not authenticated.
+
+Example:
+
+res.status(401).json({
+    message: "Unauthorized access"
+});
+
+----------------------------------------
+403 Forbidden
+----------------------------------------
+
+The client is authenticated but does not have
+permission to access the requested resource.
+
+Example:
+
+res.status(403).json({
+    message: "Access denied"
+});
+
+----------------------------------------
+404 Not Found
+----------------------------------------
+
+The requested resource could not be found.
+
+Example:
+
+res.status(404).json({
+    message: "Doctor not found"
+});
+
+----------------------------------------
+500 Internal Server Error
+----------------------------------------
+
+An unexpected error occurred on the server.
+
+Example:
+
+res.status(500).json({
+    message: "Internal server error"
+});
+
+
+
 */
