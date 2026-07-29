@@ -1,7 +1,6 @@
 /*
-========================================
         Response Object (res)
-========================================
+
 
 The response object (res) is used to send a response
 from the server back to the client.
@@ -12,9 +11,8 @@ Common Response Methods:
 - res.status()    : Sets the HTTP status code.
 - res.sendFile()  : Sends a file as the response.
 
-========================================
               Routing
-========================================
+
 
 Routing is the process of defining how an application
 responds to a client's request for a specific URL

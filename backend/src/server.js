@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 
+
 // Home Route
 app.get("/", (req, res) => {
   res.send("Welcome to Server");
