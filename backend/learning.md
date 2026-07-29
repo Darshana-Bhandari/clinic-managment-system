@@ -59,3 +59,55 @@ Examples:
 // - res.json()
 // - res.status()
 // - res.sendFile()
+
+/*
+REST API (Representational State Transfer)
+
+REST (Representational State Transfer) is an architectural style
+used for designing web APIs. It defines a set of rules and
+principles that make APIs simple, scalable, and easy to use.
+
+What is a RESTful API?
+
+
+A RESTful API is an API that follows the REST architecture.
+
+A RESTful API typically uses:
+- HTTP protocol
+- URLs (Endpoints)
+- HTTP Methods
+- JSON (JavaScript Object Notation) for data exchange
+
+
+Common HTTP Methods
+
+
+GET    -> Retrieve data
+POST   -> Create new data
+PUT    -> Update existing data
+DELETE -> Remove data
+
+
+Example Endpoints
+
+
+GET    /students        -> Get all students
+GET    /students/1      -> Get student with ID 1
+
+POST   /students        -> Create a new student
+
+PUT    /students/1      -> Update student with ID 1
+
+DELETE /students/1      -> Delete student with ID 1
+
+
+Example URLs
+
+
+GET    /students
+POST   /students
+PUT    /students/1
+DELETE /students/1
+
+
+*/
