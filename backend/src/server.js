@@ -76,3 +76,45 @@ app.listen(PORT, () => {
 });
 
 app.use("/api", studentRoutes);
+
+
+
+// Without Error Handling
+
+
+// Uncomment these lines to see how the program crashes.
+
+// const num = undefined;
+// console.log(num.name);
+
+// Output:
+// TypeError: Cannot read properties of undefined (reading 'name')
+
+
+
+// With Error Handling
+
+
+try {
+    const num = undefined;
+    console.log(num.name);
+} catch (error) {
+    console.log("An error occurred!");
+    console.log(error.message);
+}
+
+console.log("Program continues...");
+
+
+
+// With try...catch...finally
+
+try {
+    const num = undefined;
+    console.log(num.name);
+} catch (error) {
+    console.log("Error Name:", error.name);
+    console.log("Error Message:", error.message);
+} finally {
+    console.log("This block always executes.");
+}
