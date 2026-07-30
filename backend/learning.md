@@ -271,5 +271,140 @@ const getDoctors = (req, res) => {
 };
 
 
+Types of Errors
+
+Errors are mistakes in a program that prevent it from working correctly. In programming, the two main types of errors are:
+
+1. Syntax Error
+2. Runtime Error
+
+
+1. Syntax Error
+
+ Definition
+A **Syntax Error** is an error that occurs when the programmer does not follow the rules (syntax) of the programming language. The compiler or interpreter detects these errors before the program runs.
+
+Causes
+- Missing semicolon (`;`)
+- Missing brackets (`{}` or `()`)
+- Misspelled keywords
+- Incorrect punctuation
+- Wrong statement structure
+
+Example
+
+Incorrect Code
+
+```c
+#include <stdio.h>
+
+int main() {
+    printf("Hello World")
+    return 0;
+}
+```
+
+Error
+```
+Missing semicolon (;) after the printf statement.
+```
+
+Correct Code
+
+```c
+#include <stdio.h>
+
+int main() {
+    printf("Hello World");
+    return 0;
+}
+```
+
+Characteristics
+- Detected before program execution.
+- Program cannot run until the error is fixed.
+- Easy to identify because the compiler shows the line number.
+
+---
+
+# 2. Runtime Error
+
+Definition
+A **Runtime Error** is an error that occurs while the program is executing. The program compiles successfully, but it crashes or behaves unexpectedly during execution.
+
+Causes
+- Division by zero
+- Invalid array index
+- File not found
+- Memory allocation failure
+- Null pointer access
+
+Example
+
+ Incorrect Code
+
+```c
+#include <stdio.h>
+
+int main() {
+    int a = 10;
+    int b = 0;
+
+    printf("%d", a / b);
+
+    return 0;
+}
+```
+
+Error
+```
+Division by zero
+```
+
+Correct Code
+
+```c
+#include <stdio.h>
+
+int main() {
+    int a = 10;
+    int b = 2;
+
+    printf("%d", a / b);
+
+    return 0;
+}
+```
+
+Characteristics
+- Occurs during program execution.
+- Program compiles successfully but crashes or stops while running.
+- Harder to identify than syntax errors.
+
+
+
+# Difference Between Syntax Error and Runtime Error
+
+| Syntax Error | Runtime Error |
+|---------------|---------------|
+| Occurs due to incorrect programming syntax. | Occurs while the program is running. |
+| Detected during compilation. | Detected during execution. |
+| Program cannot execute until fixed. | Program starts but may crash or stop unexpectedly. |
+| Examples: Missing semicolon, missing bracket, misspelled keyword. | Examples: Division by zero, file not found, invalid memory access. |
+| Easier to detect because the compiler reports the error. | Harder to detect because it happens during execution. |
+
+---
+
+# Summary
+
+## Syntax Error
+A syntax error occurs when the rules of the programming language are violated. These errors are detected before execution, and the program cannot run until they are corrected.
+
+## Runtime Error
+A runtime error occurs while the program is running. Although the program compiles successfully, it may crash or stop unexpectedly because of issues such as division by zero, invalid memory access, or missing files.
+
+
+// mysql -u root -p
+student table
 */
 
