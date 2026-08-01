@@ -1,6 +1,8 @@
 {
   "dependencies": {
+    "@prisma/client": "^7.9.1",
     "@tailwindcss/vite": "^4.3.3",
+    "prisma": "^7.9.1",
     "tailwindcss": "^4.3.3"
   }
 }
