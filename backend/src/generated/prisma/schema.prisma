@@ -8,14 +8,14 @@ datasource db {
 }
 
 model User {
-  id      Int    @id @default(autoincrement())
-  fullname    String
-  age     Int
-  address String
-  email   String @unique
-  phone String @unique
-  role Role @default(PATIENT)
-  isActive Boolean @default(true)
+  id        Int      @id @default(autoincrement())
+  fullname  String
+  age       Int
+  address   String
+  email     String   @unique
+  phone     String   @unique
+  role      Role     @default(PATIENT)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
