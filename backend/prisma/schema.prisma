@@ -7,23 +7,22 @@ datasource db {
   provider = "mysql"
 }
 
-model User {
-  id      Int    @id @default(autoincrement())
-  fullname    String
-  age     Int
-  address String
-  email   String @unique
-  phone String @unique
-  role Role @default(PATIENT)
-  isActive Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model user {
+  id        Int       @id @default(autoincrement())
+  age       Int
+  address   String
+  email     String    @unique(map: "User_email_key")
+  createdAt DateTime  @default(now())
+  fullname  String
+  isActive  Boolean   @default(true)
+  phone     String    @unique(map: "User_phone_key")
+  role      user_role @default(PATIENT)
+  updatedAt DateTime
 }
 
-enum Role {
+enum user_role {
   ADMIN
   DOCTOR
   STAFF
   PATIENT
 }
-
