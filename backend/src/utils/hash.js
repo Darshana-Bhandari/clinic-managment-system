@@ -1,4 +1,4 @@
-import bcrypt from bcrypt
+import bcrypt from "bcrypt"
 const salt_rounds=10 // assignment 
 
 export const hashPassword= async(password)=>{
