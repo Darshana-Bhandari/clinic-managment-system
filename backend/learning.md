@@ -886,5 +886,63 @@ EXIT;
 - SQL commands are categorized into DDL, DML, DQL, DCL, and TCL.
 - Constraints ensure data integrity.
 - Common operations include creating databases, creating tables, inserting, updating, retrieving, and deleting data.
+
+
+
+Session Authentication
+
+How it works:
+
+User logs in with email and password.
+Server verifies the credentials.
+Server creates a session for the user.
+Session ID is stored in a cookie.
+Browser sends the cookie with future requests.
+Server checks the session and allows access.
+On logout, the session is destroyed.
+
+Advantages:
+
+Easy to implement.
+Easy logout.
+Server has control over sessions.
+Supports session expiration.
+Good for traditional web applications.
+
+Disadvantages:
+
+Server must store sessions.
+Can be harder to scale.
+Requires session management.
+Cookie security must be handled properly.
+Not always ideal for distributed applicatins.
+
+
+JWT Authentication
+
+How it works:
+
+User logs in with email and password.
+Server verifies the credentials.
+Server creates a JWT token.
+Token is sent to the user.
+User sends the token with future requests.
+Server verifies the token and allows access.
+Token expires after a certain time.
+
+Advantages:
+
+No server-side session storage required.
+Good for APIs and distributed applications.
+Easy to use with React and Node.js.
+Can contain user information and roles.
+Works well across different services.
+
+Disadvantages:
+
+Token can be difficult to invalidate before expiry.
+If stolen, it can be misused until it expires.
+Token size can be larger than a session ID.
+Token storage must be handled securely.
 */
 
