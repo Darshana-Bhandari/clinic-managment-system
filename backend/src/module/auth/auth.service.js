@@ -90,3 +90,49 @@ if(estingPhone){
     refreshToken
 }
 }
+
+const loginUser=async(email,password,rememberMe=False)=>{
+    // const {email,password}=loginData;
+// find user
+const user=await prisma.user.findunique({
+    where:{email}
+})
+if(!user){
+    throw new Error(MESSAGES.INVALID_CREDENTIALS)
+}
+if(!user.isActive){
+    throw new Error(MESSAGES.ACCOUNT_NACTIVE)
+
+    // verify password
+    const isvalidpassword = await comparepassword(password,user.password)
+    if(!isvalidpassword){
+        throw new Error(MESSAGES.INVALID_CREDENTIALS)
+    }
+const {accessToken,refreshToken}=generateTokens(user);
+
+// last login update and refresh token
+await prisma.update({
+    where:{id:user.id},
+    data:{
+        lastLogin:new Date(),
+        refreshToken:refreshToken,
+    }
+})
+// remove sensitive data from user object
+const{password:_,refreshToken:_,... userwithoutSensitive}=user;
+return {user:userwithoutSensitive,accessToken,refreshToken}
+accessToken
+refreshToken
+}
+
+}
+
+export const logoutUser=async(userId)=>{
+    await prisma.user,update({
+        where:{id:userId},
+        data:{
+            refreshToken:null
+        }
+    })
+    return true;
+}
