@@ -1,4 +1,4 @@
-import { STATUS_CODES } from "../constans/statusCodes.js";
+import { STATUS_CODES ,CREATED} from "../constans/statusCodes.js";
 
 export const successResponse = (
   res,
@@ -12,6 +12,10 @@ export const successResponse = (
     data,
   });
 };
+// create response 
+export const createdResponse =(res,data , message='Resource create successfully') =>{
+  return successResponse(res,data,message,CREATED)
+}
 
 export const errorResponse = (
   res,

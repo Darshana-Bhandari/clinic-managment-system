@@ -9,9 +9,10 @@ export const MESSAGES={
     EMAILALREADY_EXIST:"Email already exist",
     PHONE_ALREADY_EXIST:"PHone ALready exist",
     USER_NOT_FOUND:"User not found",
-    ACCOUNT_NACTIVE:"Account has beed inactive",
+    ACCOUNT_INACTIVE:"Account has beed inactive",
     TOKEN_REFRESHED:"Token has been refreshed",
     Invalid_REFRESH_TOKEN:"Invalid refresh token",
+    Invalid_ACCESSTOKEN_TOKEN:"invalid accessToken",
     VALIDATION_FAILED:"Validation failed",
     INTERNAL_SERVER_ERROR:"Internal server error"
 }

@@ -42,18 +42,23 @@ export const register = async (req, res) => {
   }
 };
 
-export const login = async (req, res) => {
-  try {
-    const loginData = loginData.parse(req.body)
+
+
+export const login= async (req,res)=>{
+  try{
+    const loginData= loginData.parse(req.body)
     const result = await loginUser(loginData)
 
-    // set refresh token in Httponly cookie
-    setRefreshTokenCookie(res, result.accessToken)
-    // refresh token remove from hte response body
+
+    // set refresh token in HTTp-only
+    setRefreshTokenCookie(res,result.accessToken)
+    // refrsh token removed from hte response body
     delete result.refreshToken;
-    return sucessResponse(res, result, MESSAGES.LOGIN_SUCCESS);
+    return successResponse(res,result,message.LOGIN_SUCCESS);
+
+
   }
-  catch(error) {
-    return error
+  catch (error){
+    return errorResponse(res,error)
   }
 }
