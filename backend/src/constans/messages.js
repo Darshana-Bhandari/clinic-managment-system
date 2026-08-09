@@ -1,18 +1,33 @@
-export const MESSAGES={
-    // authentication
-    REGISTER_SUCCESS:"User regisered sucessfully",
-    LOGIN_SUCCESS:"User login successfully",
-    LOGOUT_SUCCESS:"User logout SUCCESSFULLY",
-    INVALID_CREDENTIALS:"Invalid email or password",
-    UNAUTHORIZED:"Unauthorized access",
-    FORBIDDEN:"Access denied",
-    EMAILALREADY_EXIST:"Email already exist",
-    PHONE_ALREADY_EXIST:"PHone ALready exist",
-    USER_NOT_FOUND:"User not found",
-    ACCOUNT_INACTIVE:"Account has beed inactive",
-    TOKEN_REFRESHED:"Token has been refreshed",
-    Invalid_REFRESH_TOKEN:"Invalid refresh token",
-    Invalid_ACCESSTOKEN_TOKEN:"invalid accessToken",
-    VALIDATION_FAILED:"Validation failed",
-    INTERNAL_SERVER_ERROR:"Internal server error"
-}
+export const MESSAGES = {
+  // Success Messages
+  USER_REGISTERED: 'User registered successfully. Please verify your email.',
+  EMAIL_VERIFIED: 'Email verified successfully',
+  VERIFICATION_OTP_SENT: 'Verification OTP sent to your email',
+  PASSWORD_RESET_OTP_SENT: 'Password reset OTP sent to your email',
+  PASSWORD_RESET_SUCCESS: 'Password reset successfully',
+  LOGIN_SUCCESS: 'Login successful',
+  LOGOUT_SUCCESS: 'Logged out successfully',
+  TOKEN_REFRESHED: 'Token refreshed successfully',
+  PROFILE_UPDATED: 'Profile updated successfully',
+  SESSION_REVOKED: 'Session revoked successfully',
+  
+  // Error Messages
+  VALIDATION_ERROR: 'Validation error',
+  USER_EXISTS: 'User with this email already exists',
+  INVALID_CREDENTIALS: 'Invalid credentials',
+  ACCOUNT_DEACTIVATED: 'Account is deactivated',
+  EMAIL_NOT_VERIFIED: 'Please verify your email first',
+  USER_NOT_FOUND: 'User not found',
+  TOKEN_REQUIRED: 'Access token is required',
+  INVALID_TOKEN: 'Invalid or expired access token',
+  REFRESH_TOKEN_REQUIRED: 'Refresh token is required',
+  INVALID_REFRESH_TOKEN: 'Invalid or expired refresh token',
+  AUTHENTICATION_FAILED: 'Authentication failed',
+  INSUFFICIENT_PERMISSIONS: 'Insufficient permissions',
+  INVALID_OTP: 'Invalid or expired OTP',
+  OTP_EXPIRED: 'OTP has expired',
+  OTP_ALREADY_USED: 'OTP has already been used',
+  ROUTE_NOT_FOUND: 'Route not found',
+  INTERNAL_SERVER_ERROR: 'Internal server error',
+  EMAIL_SEND_FAILED: 'Failed to send email',
+};

@@ -1,28 +1,99 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "mysql"
 }
 
-model user {
-  id        Int       @id @default(autoincrement())
-  age       Int
-  address   String
-  email     String    @unique(map: "User_email_key")
-  createdAt DateTime  @default(now())
-  fullname  String
-  isActive  Boolean   @default(true)
-  phone     String    @unique(map: "User_phone_key")
-  role      user_role @default(PATIENT)
-  updatedAt DateTime
+model User {
+  id              String   @id @default(cuid())
+  email           String   @unique
+  password        String
+  fullName        String
+  phoneNumber     String?
+  role            Role     @default(PATIENT)
+  isActive        Boolean  @default(true)
+  isEmailVerified Boolean  @default(false)
+  lastLoginAt     DateTime?
+  lastLoginIP     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  sessions      Session[]
+  auditLogs     AuditLog[]
+  otps          OTP[]
+
+  @@map("users")
 }
 
-enum user_role {
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userAgent String?
+  ipAddress String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
+  revokedAt DateTime?
+
+  @@map("refresh_tokens")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  userAgent    String?
+  ipAddress    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  lastActivity DateTime @default(now())
+  isActive     Boolean  @default(true)
+
+  @@map("sessions")
+}
+
+model OTP {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  type      OTPType
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  isUsed    Boolean  @default(false)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@map("otps")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  resource  String
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+enum Role {
   ADMIN
   DOCTOR
-  STAFF
   PATIENT
+  RECEPTIONIST
+}
+
+enum OTPType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
 }

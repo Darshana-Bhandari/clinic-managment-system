@@ -1,11 +1,14 @@
-import bcrypt from "bcrypt"
-const salt_rounds=10 // assignment 
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
-export const hashPassword= async(password)=>{
-    return await bcrypt.hash(password,salt_rounds)
-}
+export const hashPassword = async (password) => {
+  return await bcrypt.hash(password, 12);
+};
 
+export const comparePassword = async (password, hashedPassword) => {
+  return await bcrypt.compare(password, hashedPassword);
+};
 
-const comparePasword=async(passowrd,hashPassword)=>{
-    return await bcrypt.compare(password,hashPassword)
-}
+export const generateTokenHash = (token) => {
+  return crypto.createHash('sha256').update(token).digest('hex');
+};

@@ -1,23 +1,40 @@
-import  {optional, z} from  "zod"
-import { Roles } from "../../constans/roles.js"
+import { z } from 'zod';
+import { ROLES } from '../../constants/roles.js';
 
-export const registerSchema=z.object({
-    fullName:z.string().trim().min(3,"Fullname must be at least 3 characters"),
-    email:z.string().trim().email("Invalid email address"),
-    phone:z.string().trim().min(10,"phone number must be at least 10digits").max(15,"phone number cannot exceed 15 dgits ").optional(),
-    password:z.string().min(8, 'password must be at least 8 characters'),
-    role: z
-  .enum([
-    Roles.ADMIN,
-    Roles.DOCTOR,
-    Roles.PATIENT,
-    Roles.STAFF,
-  ])
-  .optional()
-})
+const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 
-export const loginSchema=z.object({
-    email:z.string().trim().email("Invalid email address"),
-    password:z.string().min(8, 'password must be at least 8 characters'),
-    remberMe:z.boolean().default(false),
-})
+// Registration Schema
+export const registerSchema = z.object({
+  email: z.string().email('Please provide a valid email').min(1, 'Email is required'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(passwordRegex, 'Password must contain at least one uppercase, one lowercase, one number, and one special character'),
+  fullName: z.string().min(2, 'Full name must be at least 2 characters').max(100, 'Full name cannot exceed 100 characters'),
+  phoneNumber: z.string().regex(/^[0-9]{10,15}$/, 'Phone number must be 10-15 digits').optional().nullable().transform(val => val || null),
+  role: z.enum([ROLES.ADMIN, ROLES.DOCTOR, ROLES.PATIENT, ROLES.RECEPTIONIST]).optional().default(ROLES.PATIENT),
+});
+
+// Login Schema
+export const loginSchema = z.object({
+  email: z.string().email('Please provide a valid email').min(1, 'Email is required'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+// Refresh Token Schema
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, 'Refresh token is required'),
+});
+
+// Update Profile Schema
+export const updateProfileSchema = z.object({
+  fullName: z.string().min(2, 'Full name must be at least 2 characters').max(100, 'Full name cannot exceed 100 characters').optional(),
+  phoneNumber: z.string().regex(/^[0-9]{10,15}$/, 'Phone number must be 10-15 digits').optional().nullable().transform(val => val || null),
+  currentPassword: z.string().optional(),
+  newPassword: z.string().min(8, 'Password must be at least 8 characters').regex(passwordRegex, 'Password must contain at least one uppercase, one lowercase, one number, and one special character').optional(),
+}).refine((data) => {
+  if (data.newPassword && !data.currentPassword) return false;
+  return true;
+}, { message: 'Current password is required to change password', path: ['currentPassword'] }).refine((data) => {
+  if (data.currentPassword && !data.newPassword) return false;
+  return true;
+}, { message: 'New password is required when changing password', path: ['newPassword'] });

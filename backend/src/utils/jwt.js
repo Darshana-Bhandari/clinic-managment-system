@@ -1,24 +1,34 @@
-import jwt from "jsonwebtoken" 
-import { env } from "../config/env.js"
+import jwt from 'jsonwebtoken';
+import { ENV } from '../config/env.js';
 
+export const generateTokens = (userId) => {
+  const accessToken = jwt.sign(
+    { userId },
+    ENV.JWT_ACCESS_SECRET,
+    { expiresIn: ENV.JWT_ACCESS_EXPIRES_IN }
+  );
 
-export  const generateAccessToken=(payload)=>{
-   return jwt.sign(payload,env.JWT_ACCESS_SECRET,{
-         expiresIn:env.ACCESS_TOKEN_EXPIRES
-    })
-}
+  const refreshToken = jwt.sign(
+    { userId },
+    ENV.JWT_REFRESH_SECRET,
+    { expiresIn: ENV.JWT_REFRESH_EXPIRES_IN }
+  );
 
+  return { accessToken, refreshToken };
+};
 
-export const generateRefreshToken=(payload)=>{
-    return jwt.sign(payload,env.JWT_REFRESH_SECRET,{
-         expiresIn:env.REFRESH_TOKEN_EXPIRES
-    })
-}
+export const verifyAccessToken = (token) => {
+  try {
+    return jwt.verify(token, ENV.JWT_ACCESS_SECRET);
+  } catch (error) {
+    return null;
+  }
+};
 
-export const verifyACCESSTOKEN=(payload)=>{
-    return jwt.verify(token , env.JWT_ACCESS_SECRET)
-}
-
-export const verifyRefreshToken=(payload)=>{
-    return jwt.verify(token , env.JWT_REFRESH_SECRET)
-}
+export const verifyRefreshToken = (token) => {
+  try {
+    return jwt.verify(token, ENV.JWT_REFRESH_SECRET);
+  } catch (error) {
+    return null;
+  }
+};
