@@ -1,75 +1,109 @@
-import nodemailer from "nodemailer"
-import {EMAIL_HOST} from "../config/env.js"
+import nodemailer from 'nodemailer';
+import { ENV } from './env.js';
 
+// Create email transporter
+export const createTransporter = () => {
+  return nodemailer.createTransport({
+    host: ENV.EMAIL_HOST,
+    port: ENV.EMAIL_PORT,
+    secure: ENV.EMAIL_PORT === 465,
+    auth: {
+      user: ENV.EMAIL_USER,
+      pass: ENV.EMAIL_PASSWORD,
+    },
+  });
+};
 
+// Send email function
+export const sendEmail = async ({ to, subject, html, text }) => {
+  try {
+    const transporter = createTransporter();
+    const mailOptions = {
+      from: ENV.EMAIL_FROM,
+      to,
+      subject,
+      html,
+      text: text || html.replace(/<[^>]*>/g, ''),
+    };
 
-// create transporter
-const transporter = nodemailer.createTransport({
-    host:EMAIL_HOST,
-    port:EMAIL_PORT,
-    secure:EMAIL_SECURE,
-    auth:{
-        user:EMAIL_USER,
-        pass:EMAIL_PASS
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.messageId);
+    return { success: true, messageId: info.messageId };
+  } catch (error) {
+    console.error('Email send error:', error);
+    throw new Error('Failed to send email');
+  }
+};
 
-    }
-
-})
-
-
-/// send email
- export const sendEmail = async (toString,subject,html , text="")=>{
-    try {
-        const emailOptions ={
-            from:EMAIL_USER,
-            to,
-            subject,
-            html,
-            text,
-        }
-        const info = await transporter.sendMail(emailOptions)
-        return info;
-    }
-    catch(error){
-        console.log('email sending error:',error)
-        
-    }
-}
-
-
-// send verification otp 
- export const vsendVerificationOtp = async (email, otp , name="USER")=>{
-    const html= `<!DOCTYPE html >
-    <html >
+// Email Templates
+export const getVerificationEmailTemplate = (name, otp) => {
+  return `
+    <!DOCTYPE html>
+    <html>
     <head>
-    <style>
-
-
-
-    </style>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .otp-code { font-size: 32px; font-weight: bold; color: #4CAF50; text-align: center; padding: 20px; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        .details { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0; }
+      </style>
     </head>
     <body>
-    <div class ="container">
-    <div class="header" >
-    <h2 > Email verification </h2>
-    </div>
-    <div class ="content" >
-    <p> Hello ${name} </P>
-    <p> Thank you  for registration with cms. Please use the following OTP to verify you email address : </p>
-    <div class="otp-box" > ${otp} </div>
-    <p> this otp will expire in 10 minutes
-
-
+      <div class="container">
+        <div class="header">
+          <h1>🔐 Email Verification</h1>
+        </div>
+        <p>Hello <strong>${name}</strong>,</p>
+        <p>Thank you for registering! Please use the following OTP to verify your email address:</p>
+        <div class="otp-code">${otp}</div>
+        <div class="details">
+          <p><strong>⏰ Expires in:</strong> ${ENV.OTP_EXPIRY_MINUTES} minutes</p>
+          <p><strong>📧 Email:</strong> ${ENV.EMAIL_FROM}</p>
+        </div>
+        <p>If you didn't request this, please ignore this email.</p>
+        <div class="footer">
+          <p>This is an automated message, please do not reply.</p>
+        </div>
+      </div>
     </body>
-    </ hmtl>
-    `;
+    </html>
+  `;
+};
 
-     return await sendEmail(email, "verify your email -cms",html)
-}
-
-
-
-// password reset emaik  assignment     // rahultharu980893@gmail 
- export const sendPasswordOTPEmail = async (email, otp, name="User") =>{
-    // const html=
-}
+export const getPasswordResetEmailTemplate = (name, otp) => {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #f44336; color: white; padding: 20px; text-align: center; }
+        .otp-code { font-size: 32px; font-weight: bold; color: #f44336; text-align: center; padding: 20px; }
+        .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+        .details { background: #f5f5f5; padding: 15px; border-radius: 5px; margin: 20px 0; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>🔑 Reset Your Password</h1>
+        </div>
+        <p>Hello <strong>${name}</strong>,</p>
+        <p>We received a request to reset your password. Use the following OTP:</p>
+        <div class="otp-code">${otp}</div>
+        <div class="details">
+          <p><strong>⏰ Expires in:</strong> ${ENV.OTP_EXPIRY_MINUTES} minutes</p>
+          <p><strong>🔒 Security Tip:</strong> Never share this OTP with anyone</p>
+        </div>
+        <p>If you didn't request this, please ignore this email and secure your account.</p>
+        <div class="footer">
+          <p>This is an automated message, please do not reply.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+};
