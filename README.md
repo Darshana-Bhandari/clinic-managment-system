@@ -1,4 +1,4 @@
-# 🏥 Clinic Management System
+# 🏥 Clinic Management Syste
 
 A modern web-based **Clinic Management System** designed to help manage clinic operations through a user-friendly digital platform.
 
