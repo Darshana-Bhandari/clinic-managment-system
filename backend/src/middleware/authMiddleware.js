@@ -1,62 +1,147 @@
-import { errorResponse } from "../utils/response.js";
-import {UNAUTHORIZED,FORBIDDEN} from "../constans/statusCodes.js"
-import { verifyACCESSTOKEN } from "../utils/jwt.js";
-import { MESSAGES } from "../constans/messages.js";
+import prisma from "../config/database.js";
+import jwtService from "../utils/jwt.js";
+import {
+    unauthorizedResponse,
+    forbiddenResponse,
+    serverErrorResponse,
+} from "../utils/response.js";
 
-
-
-export const authenticate = async (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
     try {
-        // get token from authrization header
-        const token = req.headers.authorization?.split(" ")[1];
+        // Get access token from cookie
+        let token = req.cookies?.accessToken;
 
+        // If cookie doesn't contain token, check Authorization header
+        if (!token && req.headers.authorization) {
+            const authHeader = req.headers.authorization;
+
+            if (authHeader.startsWith("Bearer ")) {
+                token = authHeader.split(" ")[1];
+            }
+        }
+
+        // No token
         if (!token) {
-            return errorResponse(
+            return unauthorizedResponse(
                 res,
-                new Error(MESSAGES.ACCESS_TOKEN_REQUIRED),
-                UNAUTHORIZED
+                "Authentication required"
             );
         }
 
-        const decoded = verifyACCESSTOKEN(token);
+        // Verify access token
+        let decoded;
 
-        if (!decoded) {
-            return errorResponse(
+        try {
+            decoded = jwtService.verifyAccessToken(token);
+        } catch (error) {
+            console.error("JWT verification error:", error);
+
+            if (error.message === "ACCESS_TOKEN_EXPIRED") {
+                return unauthorizedResponse(
+                    res,
+                    "Access token expired"
+                );
+            }
+
+            return unauthorizedResponse(
                 res,
-                new Error(MESSAGES.Invalid_ACCESSTOKEN_TOKEN)
+                "Invalid access token"
             );
         }
 
-        // get user from database
+        // Find user
         const user = await prisma.user.findUnique({
             where: {
-                id: decoded.id
-            }
+                id: decoded.id,
+            },
         });
 
+        // User doesn't exist
         if (!user) {
-            return errorResponse(
+            return unauthorizedResponse(
                 res,
-                new Error(MESSAGES.USER_NOT_FOUND),
-                UNAUTHORIZED
+                "User not found"
             );
         }
 
+        // User account disabled
         if (!user.isActive) {
-            return errorResponse(
+            return unauthorizedResponse(
                 res,
-                new Error(MESSAGES.USER_NOT_FOUND),
-                FORBIDDEN
+                "Account is disabled"
             );
         }
 
+        // Update session activity
+        await prisma.session.updateMany({
+            where: {
+                userId: user.id,
+                token: token,
+                isActive: true,
+            },
+            data: {
+                lastActivity: new Date(),
+            },
+        });
+
+        // Attach user to request
         req.user = user;
+
         next();
+
     } catch (error) {
-        console.log("error");
+        console.error("Auth middleware error:", error);
+
+        return serverErrorResponse(
+            res,
+            "Internal server error"
+        );
     }
 };
 
-/// auhorization middleware
 
-// validation Middleware
+export const authorize = (...allowedRoles) => {
+    return (req, res, next) => {
+        try {
+            const user = req.user;
+
+            // User not authenticated
+            if (!user) {
+                return unauthorizedResponse(
+                    res,
+                    "User not authenticated"
+                );
+            }
+
+            // Check role
+            const hasRole = allowedRoles.some(
+                (role) => role.toUpperCase() === user.role.toUpperCase()
+            );
+
+            if (!hasRole) {
+                return forbiddenResponse(
+                    res,
+                    "Insufficient permissions"
+                );
+            }
+
+            next();
+
+        } catch (error) {
+            console.error("Authorization error:", error);
+
+            return serverErrorResponse(
+                res,
+                "Internal server error"
+            );
+        }
+    };
+};
+
+
+export const isAdmin = authorize("ADMIN");
+
+export const isDoctorOrAdmin = authorize(
+    "DOCTOR",
+    "ADMIN"
+);

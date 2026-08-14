@@ -1,9 +1,9 @@
-import express from 'express';
+﻿import express from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import router from './routes/index.js';
-import config from './config/env.js';
+import { ENV } from './config/env.js';
 
 const app = express();
 
@@ -30,9 +30,6 @@ app.use(cookieParser());
 // Authentication Routes
 app.use('/api',router);
 
-// // Admin Routes
-// app.use('/api/admin', adminRoutes);
-
 
 
 // 404 Handler
@@ -49,7 +46,7 @@ app.use((err, req, res, next) => {
     res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: config.NODE_ENV === 'development' ? err.message : undefined,
+        error: ENV.NODE_ENV === 'development' ? err.message : undefined,
     });
 });
 

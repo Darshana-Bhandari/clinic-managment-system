@@ -1,25 +1,34 @@
-import { validationResult } from 'express-validator';
-import responseHandler from '../utils/response.js';
+import { errorResponse } from "../utils/response.js";
+import { STATUS_CODES } from "../constans/statusCodes.js";
 
-export const validate = (validations) => {
-    return async (req, res, next) => {
+export const validate = (schema) => {
+    return (req, res, next) => {
         try {
-            await Promise.all(validations.map(validation => validation.run(req)));
-            const errors = validationResult(req);
+            const result = schema.safeParse(req.body);
 
-            if (errors.isEmpty()) {
-                return next();
+            if (!result.success) {
+                const formattedErrors = result.error.issues.map((issue) => ({
+                    field: issue.path.join("."),
+                    message: issue.message,
+                }));
+
+                return errorResponse(
+                    res,
+                    "Validation failed",
+                    STATUS_CODES.UNPROCESSABLE_ENTITY,
+                    formattedErrors
+                );
             }
 
-            const formattedErrors = errors.array().map(error => ({
-                field: error.path,
-                message: error.msg,
-            }));
+            // Replace request body with validated data
+            req.body = result.data;
 
-            return responseHandler.error(res, 'Validation failed', 422, formattedErrors);
+            next();
+
         } catch (error) {
-            console.error('Validation error:', error);
-            return responseHandler.serverError(res);
+            console.error("Validation error:", error);
+
+            next(error);
         }
     };
 };

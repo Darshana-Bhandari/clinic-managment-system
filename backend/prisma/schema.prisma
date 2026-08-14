@@ -4,33 +4,36 @@ generator client {
 
 datasource db {
   provider = "mysql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
-  id              String   @id @default(cuid())
-  email           String   @unique
-  password        String
-  fullName        String
-  phoneNumber     String?
-  role            Role     @default(PATIENT)
-  isActive        Boolean  @default(true)
-  isEmailVerified Boolean  @default(false)
-  lastLoginAt     DateTime?
-  lastLoginIP     String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  fullName     String
+  phone        String  @unique
+  role         Role     
+  isActive     Boolean  @default(true)
+  isEmailVerified Boolean @default(false)
+  lastLoginAt  DateTime?
+  lastLoginIP  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   refreshTokens RefreshToken[]
   sessions      Session[]
   auditLogs     AuditLog[]
-  otps          OTP[]
+  otps          oTP[]
+patient Patient?
+
 
   @@map("users")
 }
 
 model RefreshToken {
   id        String   @id @default(cuid())
-  token     String   @unique
+  token     String   @unique @db.VarChar(768)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userAgent String?
@@ -47,7 +50,7 @@ model Session {
   id           String   @id @default(cuid())
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token        String   @unique
+  token        String   @unique @db.VarChar(768)
   userAgent    String?
   ipAddress    String?
   expiresAt    DateTime
@@ -58,7 +61,7 @@ model Session {
   @@map("sessions")
 }
 
-model OTP {
+model oTP {
   id        String   @id @default(cuid())
   email     String
   otp       String
@@ -86,11 +89,69 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+
+model Patient {
+  id                String        @id @default(cuid())
+  userId            String        @unique
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateOfBirth       DateTime?
+  gender            Gender?
+  bloodGroup        String?
+  allergies         String?
+  medicalHistory    Json?
+  emergencyContact  Json?
+  address           String?
+  city              String?
+  province          String?
+  country           String?
+  zipCode           String?
+  insuranceProvider String?
+  insuranceNumber   String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  appointments      Appointment[]
+
+  @@map("patients")
+}
+enum Gender{
+  Male
+  Female 
+  others
+}
+
+
+model Appointment {
+  id           String            @id @default(cuid())
+  patientId    String
+  patient      Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  date         DateTime
+  time         String
+  status       AppointmentStatus @default(SCHEDULED)
+  type         String?
+  notes        String?
+  
+  prescription String?
+  diagnosis    String?
+  followUpDate DateTime?
+  createdAt    DateTime          @default(now())
+
+  @@map("appointments")
+}
 enum Role {
   ADMIN
   DOCTOR
   PATIENT
+  string 
   RECEPTIONIST
+}
+enum AppointmentStatus{
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELED
+  RESCHEDULED
+  NO_SHOW
+
 }
 
 enum OTPType {
