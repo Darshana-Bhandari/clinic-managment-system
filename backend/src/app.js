@@ -47,7 +47,6 @@ app.get('/', (req, res) => {
         version: '1.0.0',
     });
 });
-
 // ==================== API ROUTES ====================
 
 app.use('/api', router);
