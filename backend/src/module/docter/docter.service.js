@@ -1,5 +1,5 @@
 import prisma from "../../config/database.js";
-import { MESSAGES } from "../../constants/messages.js";
+import { MESSAGES } from "../../constans/messages.js";
 
 // ==================== CREATE DOCTOR ====================
 export const createDoctor = async (doctorData) => {
@@ -78,9 +78,8 @@ export const createDoctor = async (doctorData) => {
   await prisma.auditLog.create({
     data: {
       userId: userId,
-      action: 'DOCTOR_CREATED',
-      resource: 'Doctor',
-      details: { doctorId: doctor.id },
+      action: 'CREATE',
+      description: `Doctor profile created with ID: ${doctor.id}`,
     },
   });
 
@@ -300,9 +299,8 @@ export const updateDoctor = async (doctorId, updateData) => {
   await prisma.auditLog.create({
     data: {
       userId: doctor.userId,
-      action: 'DOCTOR_UPDATED',
-      resource: 'Doctor',
-      details: { doctorId: doctor.id },
+      action: 'UPDATE',
+      description: `Doctor profile updated with ID: ${doctor.id}`,
     },
   });
 
@@ -336,9 +334,8 @@ export const deleteDoctor = async (doctorId) => {
   await prisma.auditLog.create({
     data: {
       userId: doctor.userId,
-      action: 'DOCTOR_DELETED',
-      resource: 'Doctor',
-      details: { doctorId: doctor.id },
+      action: 'DELETE',
+      description: `Doctor profile deleted with ID: ${doctor.id}`,
     },
   });
 
@@ -346,7 +343,7 @@ export const deleteDoctor = async (doctorId) => {
 };
 
 // ==================== RATE DOCTOR ====================
-export const rateDoctor = async (doctorId, patientId, rating, review) => {
+export const rateDoctor = async (doctorId, userId, rating, review) => {
   // Check if doctor exists
   const doctor = await prisma.doctor.findUnique({
     where: { id: doctorId },
@@ -358,7 +355,7 @@ export const rateDoctor = async (doctorId, patientId, rating, review) => {
 
   // Check if patient exists
   const patient = await prisma.patient.findUnique({
-    where: { id: patientId },
+    where: { userId },
   });
 
   if (!patient) {
@@ -368,7 +365,7 @@ export const rateDoctor = async (doctorId, patientId, rating, review) => {
   // Check if patient has completed appointment with this doctor
   const hasCompletedAppointment = await prisma.appointment.findFirst({
     where: {
-      patientId,
+      patientId: patient.id,
       doctorId,
       status: 'COMPLETED',
     },
@@ -401,13 +398,8 @@ export const rateDoctor = async (doctorId, patientId, rating, review) => {
   await prisma.auditLog.create({
     data: {
       userId: patient.userId,
-      action: 'DOCTOR_RATED',
-      resource: 'Doctor',
-      details: { 
-        doctorId: doctor.id,
-        rating,
-        review,
-      },
+      action: 'UPDATE',
+      description: `Doctor ${doctor.id} rated by patient ${patient.id} with rating ${rating}`,
     },
   });
 

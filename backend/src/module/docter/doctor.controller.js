@@ -7,7 +7,7 @@ import {
   conflictResponse,
   handleZodError,
 } from '../../utils/response.js';
-import { MESSAGES } from '../../constants/messages.js';
+import { MESSAGES } from '../../constans/messages.js';
 
 // ==================== CREATE DOCTOR ====================
 export const createDoctor = async (req, res) => {
@@ -120,13 +120,9 @@ export const rateDoctor = async (req, res) => {
   try {
     const { id } = req.params;
     const { rating, review } = req.body;
-    const patientId = req.user.patient?.id;
+    const userId = req.user.id;
 
-    if (!patientId) {
-      return errorResponse(res, 'Patient profile not found', 400);
-    }
-
-    const doctor = await doctorService.rateDoctor(id, patientId, rating, review);
+    const doctor = await doctorService.rateDoctor(id, userId, rating, review);
     return successResponse(res, doctor, 'Doctor rated successfully');
   } catch (error) {
     console.error('Rate doctor error:', error);

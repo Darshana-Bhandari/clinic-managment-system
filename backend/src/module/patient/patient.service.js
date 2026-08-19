@@ -69,9 +69,8 @@ export const createPatient = async (patientData) => {
   await prisma.auditLog.create({
     data: {
       userId: userId,
-      action: 'PATIENT_CREATED',
-      resource: 'Patient',
-      details: { patientId: patient.id },
+      action: 'CREATE',
+      description: `Patient profile created with ID: ${patient.id}`,
     },
   });
 
@@ -253,9 +252,8 @@ export const updatePatient = async (patientId, updateData) => {
   await prisma.auditLog.create({
     data: {
       userId: patient.userId,
-      action: 'PATIENT_UPDATED',
-      resource: 'Patient',
-      details: { patientId: patient.id },
+      action: 'UPDATE',
+      description: `Patient profile updated with ID: ${patient.id}`,
     },
   });
 
@@ -286,9 +284,8 @@ export const deletePatient = async (patientId) => {
   await prisma.auditLog.create({
     data: {
       userId: patient.userId,
-      action: 'PATIENT_DELETED',
-      resource: 'Patient',
-      details: { patientId: patient.id },
+      action: 'DELETE',
+      description: `Patient profile deleted with ID: ${patient.id}`,
     },
   });
 
