@@ -6,6 +6,7 @@ datasource db {
   provider = "mysql"
 }
 
+
 // =========================
 // ENUMS
 // =========================
@@ -84,6 +85,7 @@ model User {
 
   patient Patient?
   doctor  Doctor?
+  headedDepartments Department[] @relation("DepartmentHead")
 
   @@map("users")
 }
@@ -224,32 +226,46 @@ model Patient {
 // DOCTOR
 // =========================
 
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  headDoctorId String?
+  headDoctor  User?    @relation("DepartmentHead", fields: [headDoctorId], references: [id], onDelete: SetNull)
+  hospital    String?
+  phone       String?
+  email       String?
+  location    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  doctors     Doctor[]
+
+  @@map("departments")
+}
+
+
 model Doctor {
-  id     String @id @default(cuid())
-  userId String @unique
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  specialization  String?
-  licenseNumber   String?
-  qualifications  Json
-  experience      Int?
-  hospital        String?
-  department      String?
-  consultationFee Float?
-
-  availableDays Json?
-  bio            String?
-
-  rating       Float @default(0)
-  totalReviews Int   @default(0)
-
-  certificates Json?
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId      String?
+  department        Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  specialization    String?
+  licenseNumber     String?
+  qualifications    Json
+  experience        Int?
+  hospital          String?
+  consultationFee   Float?
+  availableDays     Json?
+  bio               String?
+  rating            Float    @default(0)
+  totalReviews      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   appointments Appointment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@map("doctors")
 }
