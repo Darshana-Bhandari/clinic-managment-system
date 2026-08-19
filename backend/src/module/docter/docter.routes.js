@@ -1,27 +1,32 @@
 import express from 'express';
+
 import * as doctorController from './doctor.controller.js';
-import { 
-  createDoctorSchema, 
+
+import {
+  createDoctorSchema,
   updateDoctorSchema,
   doctorIdSchema,
   rateDoctorSchema,
-  validate 
-} from './doctor.schema.js';
+  validate,
+} from './docter.schema.js';
+
 import { verifyToken, authorize } from '../../middleware/authMiddleware.js';
-import { ROLES } from '../../constants/roles.js';
+
+import { ROLES } from '../../constans/roles.js';
 
 const router = express.Router();
 
-// Public routes (no authentication required)
+// ==================== PUBLIC ROUTES ====================
+
 router.get('/public', doctorController.getAllDoctors);
+
 router.get('/public/:id', doctorController.getDoctorById);
 
-// All other routes require authentication
+// ==================== AUTHENTICATED ROUTES ====================
+
 router.use(verifyToken);
 
-// ==================== DOCTOR ROUTES ====================
-
-// Create doctor (Admin only)
+// Create doctor - Admin only
 router.post(
   '/',
   authorize(ROLES.ADMIN),
@@ -29,7 +34,7 @@ router.post(
   doctorController.createDoctor
 );
 
-// Get all doctors with pagination and filters
+// Get all doctors - Admin, Patient, Receptionist
 router.get(
   '/',
   authorize(ROLES.ADMIN, ROLES.PATIENT, ROLES.RECEPTIONIST),
@@ -49,7 +54,7 @@ router.get(
   doctorController.getDoctorById
 );
 
-// Update doctor (Admin, Doctor self)
+// Update doctor - Admin only
 router.put(
   '/:id',
   authorize(ROLES.ADMIN),
@@ -57,14 +62,14 @@ router.put(
   doctorController.updateDoctor
 );
 
-// Delete doctor (Admin only)
+// Delete doctor - Admin only
 router.delete(
   '/:id',
   authorize(ROLES.ADMIN),
   doctorController.deleteDoctor
 );
 
-// Rate doctor (Patient only)
+// Rate doctor - Patient only
 router.post(
   '/:id/rate',
   authorize(ROLES.PATIENT),

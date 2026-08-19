@@ -1,12 +1,14 @@
-import * as doctorService from './doctor.service.js';
-import { 
-  successResponse, 
+import * as doctorService from './docter.service.js';
+
+import {
+  successResponse,
   errorResponse,
   createdResponse,
   notFoundResponse,
   conflictResponse,
   handleZodError,
 } from '../../utils/response.js';
+
 import { MESSAGES } from '../../constans/messages.js';
 
 // ==================== CREATE DOCTOR ====================
