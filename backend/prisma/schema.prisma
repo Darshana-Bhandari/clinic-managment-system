@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 // =========================
 // ENUMS
 // =========================
@@ -58,21 +57,20 @@ enum SessionStatus {
   REVOKED
 }
 
-
 // =========================
 // USER
 // =========================
 
 model User {
-  id              String   @id @default(cuid())
-  email           String   @unique
+  id              String    @id @default(cuid())
+  email           String    @unique
   password        String
   fullName        String
-  phone           String?  @unique
+  phone           String?   @unique
   avatar          String?
-  role            Role     @default(PATIENT)
-  isActive        Boolean  @default(true)
-  isEmailVerified Boolean  @default(false)
+  role            Role      @default(PATIENT)
+  isActive        Boolean   @default(true)
+  isEmailVerified Boolean   @default(false)
   lastLoginAt     DateTime?
   lastLoginIP     String?
 
@@ -84,13 +82,12 @@ model User {
   auditLogs     AuditLog[]
   otps          OTP[]
 
-  patient Patient?
-  doctor  Doctor?
+  patient           Patient?
+  doctor            Doctor?
   headedDepartments Department[] @relation("DepartmentHead")
 
   @@map("users")
 }
-
 
 // =========================
 // REFRESH TOKEN
@@ -112,7 +109,6 @@ model RefreshToken {
   @@index([expiresAt])
   @@map("refresh_tokens")
 }
-
 
 // =========================
 // SESSION
@@ -138,7 +134,6 @@ model Session {
   @@map("sessions")
 }
 
-
 // =========================
 // OTP
 // =========================
@@ -162,7 +157,6 @@ model OTP {
   @@map("otps")
 }
 
-
 // =========================
 // AUDIT LOG
 // =========================
@@ -184,7 +178,6 @@ model AuditLog {
   @@index([createdAt])
   @@map("audit_logs")
 }
-
 
 // =========================
 // PATIENT
@@ -214,7 +207,8 @@ model Patient {
 
   documents Json?
 
-  appointments Appointment[]
+  medicalRecords MedicalRecord[]
+  appointments   Appointment[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -222,55 +216,53 @@ model Patient {
   @@map("patients")
 }
 
-
 // =========================
 // DOCTOR
 // =========================
 
 model Department {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
+  id           String   @id @default(cuid())
+  name         String   @unique
+  description  String?
   headDoctorId String?
-  headDoctor  User?    @relation("DepartmentHead", fields: [headDoctorId], references: [id], onDelete: SetNull)
-  hospital    String?
-  phone       String?
-  email       String?
-  location    String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  headDoctor   User?    @relation("DepartmentHead", fields: [headDoctorId], references: [id], onDelete: SetNull)
+  hospital     String?
+  phone        String?
+  email        String?
+  location     String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  doctors     Doctor[]
+  doctors Doctor[]
 
   @@map("departments")
 }
 
-
 model Doctor {
-  id                String   @id @default(cuid())
-  userId            String   @unique
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  departmentId      String?
-  department        Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
-  specialization    String?
-  licenseNumber     String?
-  qualifications    Json
-  experience        Int?
-  hospital          String?
-  consultationFee   Float?
-  availableDays     Json?
-  bio               String?
-  rating            Float    @default(0)
-  totalReviews      Int      @default(0)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              String      @id @default(cuid())
+  userId          String      @unique
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  specialization  String?
+  licenseNumber   String?
+  qualifications  Json
+  experience      Int?
+  hospital        String?
+  consultationFee Float?
+  availableDays   Json?
+  bio             String?
+  rating          Float       @default(0)
+  totalReviews    Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  appointments Appointment[]
+  appointments   Appointment[]
+  medicalRecords MedicalRecord[]
 
   @@map("doctors")
 }
-
 
 // =========================
 // APPOINTMENT
@@ -290,9 +282,11 @@ model Appointment {
 
   status AppointmentStatus @default(SCHEDULED)
 
-  type   String?
-  notes  String?
+  type     String?
+  notes    String?
   symptoms Json
+
+  medicalRecord MedicalRecord?
 
   prescription String?
   diagnosis    String?
@@ -306,4 +300,92 @@ model Appointment {
   @@index([date])
   @@index([status])
   @@map("appointments")
+}
+
+model MedicalRecord {
+  id            String       @id @default(cuid())
+  patientId     String
+  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String
+  doctor        Doctor       @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointmentId String?      @unique
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  diagnosis     String?
+  diagnosisDate DateTime?
+  symptoms      Json
+  notes         String?
+
+  prescriptions Prescription[]
+  reports       Report[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("medical_records")
+}
+
+model Prescription {
+  id              String        @id @default(cuid())
+  medicalRecordId String
+  medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+
+  medication     String
+  dosage         String
+  frequency      String
+  duration       String
+  instructions   String?
+  prescribedDate DateTime           @default(now())
+  expiryDate     DateTime?
+  refills        Int                @default(0)
+  status         PrescriptionStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("prescriptions")
+}
+
+model Report {
+  id              String        @id @default(cuid())
+  medicalRecordId String
+  medicalRecord   MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+
+  name    String
+  type    ReportType
+  date    DateTime     @default(now())
+  result  String?
+  fileUrl String?
+  notes   String?
+  status  ReportStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reports")
+}
+
+enum PrescriptionStatus {
+  ACTIVE
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum ReportType {
+  LAB_REPORT
+  X_RAY
+  MRI
+  CT_SCAN
+  ULTRASOUND
+  BLOOD_TEST
+  URINE_TEST
+  ECG
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
 }
