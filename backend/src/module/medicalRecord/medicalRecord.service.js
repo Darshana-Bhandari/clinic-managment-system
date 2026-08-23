@@ -354,9 +354,3 @@ export const getPatientMedicalHistory = async(patientId,page=1,limit=10) =>{
         totalPages:Math.ceil(total/limit)
     }}
 }
-
-
-
-
-
-    

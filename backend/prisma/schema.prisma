@@ -209,6 +209,7 @@ model Patient {
 
   medicalRecords MedicalRecord[]
   appointments   Appointment[]
+  bills          Bill[] @relation("PatientBills")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -295,6 +296,8 @@ model Appointment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  bills Bill[] @relation("AppointmentBills")
+
   @@index([patientId])
   @@index([doctorId])
   @@index([date])
@@ -363,6 +366,80 @@ model Report {
   updatedAt DateTime @updatedAt
 
   @@map("reports")
+}
+model Bill {
+  id              String   @id @default(cuid())
+  patientId       String
+  patient         Patient  @relation("PatientBills", fields: [patientId], references: [id], onDelete: Cascade)
+  appointmentId   String?
+  appointment     Appointment? @relation("AppointmentBills", fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  billNumber      String   @unique
+  invoiceNumber   String   @unique
+  
+  items           Json     
+  subtotal        Float
+  tax             Float    @default(0)
+  discount        Float    @default(0)
+  totalAmount     Float
+    
+  status          BillStatus @default(UNPAID)
+  paymentMethod   PaymentMethod?
+  paymentDate     DateTime?
+  
+  notes           String?
+  
+  generatedBy     String   
+  generatedAt     DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  payments        Payment[]
+
+  @@map("bills")
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  billId          String
+  bill            Bill     @relation(fields: [billId], references: [id], onDelete: Cascade)
+  
+  amount          Float
+  method          PaymentMethod
+  transactionId   String?
+  paymentDate     DateTime @default(now())
+  notes           String?
+  
+  status          PaymentStatus @default(COMPLETED)
+  refundedAt      DateTime?
+  refundReason    String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("payments")
+}
+
+enum BillStatus {
+  UNPAID
+  PAID
+  PARTIALLY_PAID
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH 
+  KHALTI
+  ESEWA
+  
+  
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
 }
 
 enum PrescriptionStatus {
