@@ -1,4 +1,4 @@
-# 🏥 Clinic Management System
+#  Clinic Management System
 
 A modern web-based **Clinic Management System** designed to help manage clinic operations through a user-friendly digital platform.
 
@@ -10,7 +10,7 @@ The project includes a feature-rich **React frontend** with public clinic pages,
 
 ---
 
-## 📌 Project Overview
+##  Project Overview
 
 Many small clinics still depend on paper records, manual appointment registers, and phone-based booking systems. These processes can lead to:
 
