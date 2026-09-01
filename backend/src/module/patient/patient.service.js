@@ -1,5 +1,6 @@
 import prisma from "../../config/database.js";
 import { MESSAGES } from "../../constans/messages.js";
+import {uploadMultipleToCloudinaryFn, deleteFromCloudinaryFn} from "../../config/multer.js";
 
 // Helper — maps raw body data to Prisma-compatible types for Patient model
 const mapPatientData = (data) => ({
@@ -15,7 +16,7 @@ const mapPatientData = (data) => ({
 });
 
 // CREATE PATIENT
-export const createPatient = async (patientData) => {
+export const createPatient = async (patientData, files={}) => {
   const { userId, ...data } = patientData;
 
   // Check if user exists
@@ -25,6 +26,11 @@ export const createPatient = async (patientData) => {
 
   if (!user) {
     throw new Error('User not found');
+  }
+  // upload documents to cloudinary
+  let uploadedFiles = [];
+  if (files && files.length > 0) {  // Check if files are provided and not empty
+    uploadedFiles = await uploadMultipleToCloudinaryFn(files);
   }
 
   // Check if user already has a patient profile
@@ -41,6 +47,7 @@ export const createPatient = async (patientData) => {
     data: {
       userId,
       ...mapPatientData(data),
+      documents:uploadedFiles,
     },
     include: {
       user: {
@@ -71,6 +78,7 @@ export const createPatient = async (patientData) => {
       userId: userId,
       action: 'CREATE',
       description: `Patient profile created with ID: ${patient.id}`,
+      documents:uploadedFiles.length
     },
   });
 
@@ -218,8 +226,10 @@ export const getPatientByUserId = async (userId) => {
   return patient;
 };
 
+
+
 // UPDATE PATIENT
-export const updatePatient = async (patientId, updateData) => {
+export const updatePatient = async (patientId, updateData, files) => {
   // Check if patient exists
   const existingPatient = await prisma.patient.findUnique({
     where: { id: patientId },
@@ -228,11 +238,31 @@ export const updatePatient = async (patientId, updateData) => {
   if (!existingPatient) {
     throw new Error('Patient not found');
   }
+  // uploaded new documents to cloudinary 
+let uploadedDocuments = [];
+if(files && files.length > 0){
+  uploadedDocuments = await uploadMultipleToCloudinaryFn(files,'healthcare/patients');
+}
+// merge existing documents with newly uploaded documents
+const existingDcouments = existingPatient.documents || [];
+const allDocuments = [...existingDcouments, ...uploadedDocuments]; // Merge existing and newly uploaded documents
+// if documents are removed, delete them from cloudinary
+if(updatedData.removeDocuments){
+  const removeDocPublicIds = updatedData.removeDocuments; // Array of public IDs to remove
+  const remainingDocuments = allDocuments.filter(doc => !removeDocPublicIds.includes(doc.publicId)); // Filter out documents to be removed
+  // Delete documents from cloudinary
+  for(const publicId of removeDocPublicIds){
+    await deleteFromCloudinaryFn(publicId);
+  }
+  updatedData.documents = remainingDocuments; // Update documents field with remaining documents
+
+}
 
   const patient = await prisma.patient.update({
     where: { id: patientId },
     // Apply same type mapping as createPatient
     data: mapPatientData(updateData),
+
     include: {
       user: {
         select: {
@@ -254,6 +284,7 @@ export const updatePatient = async (patientId, updateData) => {
       userId: patient.userId,
       action: 'UPDATE',
       description: `Patient profile updated with ID: ${patient.id}`,
+      documents: patient.documents ? patient.documents.length : 0,
     },
   });
 
@@ -269,7 +300,12 @@ export const deletePatient = async (patientId) => {
   if (!patient) {
     throw new Error('Patient not found');
   }
-
+// delete all patient docuents from cloudinary
+if(patient.documents){
+  for (const doc of patient.documents){
+    await deleteFromCloudinaryFn(doc.publicId);
+  }
+}
   // Delete related appointments then patient
   await prisma.$transaction([
     prisma.appointment.deleteMany({
@@ -286,6 +322,7 @@ export const deletePatient = async (patientId) => {
       userId: patient.userId,
       action: 'DELETE',
       description: `Patient profile deleted with ID: ${patient.id}`,
+      documents: patient.documents ? patient.documents.length : 0,
     },
   });
 

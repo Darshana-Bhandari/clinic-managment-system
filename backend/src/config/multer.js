@@ -2,27 +2,30 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { uploadToCloudinary,uploadMulterToCloudinary, deleteFromCloudinary } from './cloudinary.js';
 
-const __filename = fileURLToPath(import.meta.url);  
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Ensure upload directories exist
-const uploadDir = path.join(__dirname, '../../uploads');  /// created the folder named the uploads where we used to store the path of the file
-const patientDir = path.join(uploadDir, 'patients');
-const doctorDir = path.join(uploadDir, 'doctors');
-const documentsDir = path.join(uploadDir, 'documents');
-
-const directories = [uploadDir, patientDir, doctorDir, documentsDir];
-directories.forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
+// Local storage for temporary files
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = path.join(__dirname, '../../uploads/temp');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
 });
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase()); //  rahul.png  iwakshfkjdshfehsdih.png 
+  const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|xlsx|xls/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
 
   if (mimetype && extname) {
@@ -32,154 +35,130 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Generate unique filename
-const generateFilename = (file) => {
-  const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-  return uniqueSuffix + path.extname(file.originalname);
-};
+// ==================== MULTER UPLOAD CONFIGURATIONS ====================
 
-// Storage configuration for patient documents
-export const patientStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, patientDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, generateFilename(file));
-  }
-});
-
-// Storage configuration for doctor documents
-export const doctorStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, doctorDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, generateFilename(file));
-  }
-});
-
-// Storage configuration for general documents
-export const documentStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, documentsDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, generateFilename(file));
-  }
-});
-
-// ==================== UPLOAD CONFIGURATIONS ====================
-
-// Single file upload (profile picture)
-export const uploadProfilePicture = multer({
-  storage: patientStorage,
+// Single file upload (max 5MB)
+export const uploadSingle = multer({
+  storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 5 * 1024 * 1024, // 5MB
   },
   fileFilter,
-}).single('profilePicture');
+}).single('file');
 
-// Single file upload (doctor certificate)
-export const uploadCertificate = multer({
-  storage: doctorStorage,
+// Single file upload with larger size (max 10MB)
+export const uploadLargeSingle = multer({
+  storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB
   },
   fileFilter,
-}).single('certificate');
+}).single('file');
 
-// Single file upload (medical document)
-export const uploadMedicalDocument = multer({
-  storage: documentStorage,
+// Multiple files upload (max 5 files, 10MB each)
+export const uploadMultiple = multer({
+  storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 10 * 1024 * 1024, // 10MB per file
   },
   fileFilter,
-}).single('document');
+}).array('files', 5);
 
-// Multiple files upload (multiple documents)
-export const uploadMultipleDocuments = multer({
-  storage: documentStorage,
+// Multiple files upload with more files (max 10 files)
+export const uploadMultipleLarge = multer({
+  storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    fileSize: 10 * 1024 * 1024, // 10MB per file
   },
   fileFilter,
-}).array('documents', 5); // Max 5 files
+}).array('files', 10);
 
-// Multiple files upload (patient documents)
-export const uploadPatientDocuments = multer({
-  storage: patientStorage,
+// Multiple files with different fields
+export const uploadFields = multer({
+  storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    fileSize: 10 * 1024 * 1024,
   },
   fileFilter,
-}).array('documents', 10); // Max 10 files
+}).fields([
+  { name: 'profilePicture', maxCount: 1 },
+  { name: 'documents', maxCount: 5 },
+  { name: 'certificates', maxCount: 5 },
+]);
 
-// ==================== ERROR HANDLING ====================
+// ==================== CLOUDINARY UPLOAD FUNCTIONS ====================
 
-export const handleMulterError = (err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'FILE_TOO_LARGE') {
-      return res.status(413).json({
-        success: false,
-        message: 'File too large. Maximum file size is 10MB.',
-      });
-    }
-    if (err.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({
-        success: false,
-        message: 'Too many files uploaded. Maximum allowed is 5.',
-      });
-    }
-    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-      return res.status(400).json({
-        success: false,
-        message: 'Unexpected file field.',
-      });
-    }
-    return res.status(400).json({
-      success: false,
-      message: `Upload error: ${err.message}`,
-    });
-  }
-  
-  if (err.message === 'Only images, PDFs, and documents are allowed') {
-    return res.status(400).json({
-      success: false,
-      message: err.message,
-    });
-  }
-  
-  next(err);
-};
-
-// ==================== FILE HELPER FUNCTIONS ====================
-
-export const getFileUrl = (req, filename) => {
-  if (!filename) return null;
-  const baseUrl = `${req.protocol}://${req.get('host')}`;
-  return `${baseUrl}/uploads/${path.basename(filename)}`;
-};
-
-export const deleteFile = (filepath) => {
+// Upload single file to Cloudinary
+export const uploadToCloudinarySingle = async (file, folder = 'healthcare', options = {}) => {
   try {
-    if (fs.existsSync(filepath)) {
-      fs.unlinkSync(filepath);
-      return true;
+    if (!file) throw new Error('No file provided');
+    
+    const result = await uploadToCloudinary(file, {
+      folder,
+      resource_type: 'auto',
+      ...options,
+    });
+
+    // Clean up temp file
+    if (fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
     }
-    return false;
+
+    return {
+      publicId: result.public_id,
+      url: result.secure_url,
+      format: result.format,
+      size: result.bytes,
+      width: result.width,
+      height: result.height,
+    };
   } catch (error) {
-    console.error('Error deleting file:', error);
-    return false;
+    console.error('Cloudinary single upload error:', error);
+    throw new Error('Failed to upload file to Cloudinary');
   }
 };
 
-export const getFileInfo = (filename) => {
-  if (!filename) return null;
-  return {
-    filename: path.basename(filename),
-    size: fs.statSync(filename)?.size || 0,
-    ext: path.extname(filename),
-    path: filename,
-  };
+// Upload multiple files to Cloudinary
+export const uploadMultipleToCloudinaryFn = async (files, folder = 'healthcare', options = {}) => {
+  try {
+    if (!files || files.length === 0) throw new Error('No files provided');
+
+    const results = await uploadMultipleToCloudinary(files, {
+      folder,
+      resource_type: 'auto',
+      ...options,
+    });
+
+    // Clean up temp files
+    files.forEach(file => {
+      if (fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path);
+      }
+    });
+
+    return results.map(result => ({
+      publicId: result.public_id,
+      url: result.secure_url,
+      format: result.format,
+      size: result.bytes,
+      width: result.width,
+      height: result.height,
+    }));
+  } catch (error) {
+    console.error('Cloudinary multiple upload error:', error);
+    throw new Error('Failed to upload files to Cloudinary');
+  }
 };
+
+// Delete file from Cloudinary
+export const deleteFromCloudinaryFn = async (publicId) => {
+  try {
+    const result = await deleteFromCloudinary(publicId);
+    return result;
+  } catch (error) {
+    console.error('Cloudinary delete error:', error);
+    throw new Error('Failed to delete file from Cloudinary');
+  }
+};
+
+//  ERROR HANDLING

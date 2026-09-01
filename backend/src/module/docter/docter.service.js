@@ -32,6 +32,8 @@ export const createDoctor = async (doctorData) => {
     throw new Error('User is already registered as a patient');
   }
 
+  // upload documents to cloudinary
+
   // Check if license number is unique
   if (data.licenseNumber) {
     const existingLicense = await prisma.doctor.findUnique({
@@ -50,6 +52,7 @@ export const createDoctor = async (doctorData) => {
       ...data,
       qualifications: data.qualifications || [],
       availableDays: data.availableDays || [],
+      
     },
     include: {
       user: {
