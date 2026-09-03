@@ -23,10 +23,10 @@ export const ENV = {
 
   // // Client
   // CLIENT_URL: process.env.CLIENT_URL || "http://localhost:3000",
-  // FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
-  // RESET_PASSWORD_URL:
-  //   process.env.RESET_PASSWORD_URL ||
-  //   "http://localhost:3000/reset-password",
+  FRONTEND_URL: process.env.FRONTEND_URL || "http://localhost:3000",
+  RESET_PASSWORD_URL:
+    process.env.RESET_PASSWORD_URL ||
+    "http://localhost:3000/reset-password",
 
   // Email
   EMAIL_HOST: process.env.EMAIL_HOST,
