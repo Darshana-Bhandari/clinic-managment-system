@@ -2,12 +2,12 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { uploadToCloudinary,uploadMulterToCloudinary, deleteFromCloudinary } from './cloudinary.js';
+import { uploadToCloudinary, uploadMulterToCloudinary, deleteFromCloudinary } from './cloudinary.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Local storage for temporary files
+// ==================== TEMP DISK STORAGE ====================
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, '../../uploads/temp');
@@ -17,148 +17,178 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
 });
 
-// File filter
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt|xlsx|xls/;
+// ==================== FILE FILTERS ====================
+
+// Images only (for avatars/profile photos)
+const imageFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = allowedTypes.test(file.mimetype);
+  if (mimetype && extname) return cb(null, true);
+  cb(new Error('Only image files (jpeg, jpg, png, gif, webp) are allowed'));
+};
 
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb(new Error('Only images, PDFs, and documents are allowed'));
+// Documents + Images (for medical reports, certificates)
+const documentFilter = (req, file, cb) => {
+  const allowedTypes = /jpeg|jpg|png|gif|webp|pdf|doc|docx|txt|xlsx|xls/;
+  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = /image\/|application\/pdf|application\/msword|application\/vnd|text\/plain/.test(file.mimetype);
+  if (extname && mimetype) return cb(null, true);
+  cb(new Error('Only images, PDFs, and documents are allowed'));
+};
+
+// ==================== MULTER UPLOAD INSTANCES ====================
+
+// Single avatar/profile picture (5MB, images only)
+export const uploadAvatar = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: imageFilter,
+}).single('avatar');
+
+// Single file upload for reports (10MB, docs+images)
+export const uploadSingle = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: documentFilter,
+}).single('file');
+
+// Multiple files (up to 5, 10MB each) — used for patient documents
+export const uploadMultiple = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: documentFilter,
+}).array('files', 5);
+
+// Multiple files (up to 10, 10MB each) — used for doctor certificates
+export const uploadMultipleLarge = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: documentFilter,
+}).array('files', 10);
+
+// Named fields upload — profile picture + multiple documents
+export const uploadFields = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: documentFilter,
+}).fields([
+  { name: 'avatar', maxCount: 1 },
+  { name: 'profilePicture', maxCount: 1 },
+  { name: 'documents', maxCount: 5 },
+  { name: 'certificates', maxCount: 10 },
+  { name: 'reportFile', maxCount: 1 },
+]);
+
+// ==================== CLOUDINARY HELPER FUNCTIONS ====================
+
+// Clean up local temp file after upload
+const cleanupTempFile = (filePath) => {
+  try {
+    if (filePath && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (err) {
+    console.error('Failed to cleanup temp file:', err.message);
   }
 };
 
-// ==================== MULTER UPLOAD CONFIGURATIONS ====================
-
-// Single file upload (max 5MB)
-export const uploadSingle = multer({
-  storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB
-  },
-  fileFilter,
-}).single('file');
-
-// Single file upload with larger size (max 10MB)
-export const uploadLargeSingle = multer({
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
-  },
-  fileFilter,
-}).single('file');
-
-// Multiple files upload (max 5 files, 10MB each)
-export const uploadMultiple = multer({
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB per file
-  },
-  fileFilter,
-}).array('files', 5);
-
-// Multiple files upload with more files (max 10 files)
-export const uploadMultipleLarge = multer({
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB per file
-  },
-  fileFilter,
-}).array('files', 10);
-
-// Multiple files with different fields
-export const uploadFields = multer({
-  storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024,
-  },
-  fileFilter,
-}).fields([
-  { name: 'profilePicture', maxCount: 1 },
-  { name: 'documents', maxCount: 5 },
-  { name: 'certificates', maxCount: 5 },
-]);
-
-// ==================== CLOUDINARY UPLOAD FUNCTIONS ====================
-
-// Upload single file to Cloudinary
+/**
+ * Upload a single file to Cloudinary and clean up temp.
+ * @param {object} file  - Multer file object
+ * @param {string} folder - Cloudinary folder
+ * @param {object} options - Extra Cloudinary options
+ * @returns {{ publicId, url, format, size, width, height }}
+ */
 export const uploadToCloudinarySingle = async (file, folder = 'healthcare', options = {}) => {
+  if (!file) throw new Error('No file provided');
+
   try {
-    if (!file) throw new Error('No file provided');
-    
     const result = await uploadToCloudinary(file, {
       folder,
       resource_type: 'auto',
       ...options,
     });
 
-    // Clean up temp file
-    if (fs.existsSync(file.path)) {
-      fs.unlinkSync(file.path);
-    }
+    cleanupTempFile(file.path);
 
     return {
       publicId: result.public_id,
       url: result.secure_url,
       format: result.format,
       size: result.bytes,
-      width: result.width,
-      height: result.height,
+      width: result.width || null,
+      height: result.height || null,
+      originalName: file.originalname,
+      uploadedAt: new Date().toISOString(),
     };
   } catch (error) {
+    cleanupTempFile(file.path);
     console.error('Cloudinary single upload error:', error);
     throw new Error('Failed to upload file to Cloudinary');
   }
 };
 
-// Upload multiple files to Cloudinary
+/**
+ * Upload multiple files to Cloudinary and clean up temps.
+ * @param {object[]} files  - Array of Multer file objects
+ * @param {string} folder - Cloudinary folder
+ * @param {object} options - Extra Cloudinary options
+ * @returns {Array<{ publicId, url, format, size, width, height }>}
+ */
 export const uploadMultipleToCloudinaryFn = async (files, folder = 'healthcare', options = {}) => {
-  try {
-    if (!files || files.length === 0) throw new Error('No files provided');
+  if (!files || files.length === 0) return [];
 
-    const results = await uploadMultipleToCloudinary(files, {
+  try {
+    const results = await uploadMulterToCloudinary(files, {
       folder,
       resource_type: 'auto',
       ...options,
     });
 
-    // Clean up temp files
-    files.forEach(file => {
-      if (fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path);
-      }
-    });
+    files.forEach((file) => cleanupTempFile(file.path));
 
-    return results.map(result => ({
+    return results.map((result, index) => ({
       publicId: result.public_id,
       url: result.secure_url,
       format: result.format,
       size: result.bytes,
-      width: result.width,
-      height: result.height,
+      width: result.width || null,
+      height: result.height || null,
+      originalName: files[index]?.originalname || '',
+      uploadedAt: new Date().toISOString(),
     }));
   } catch (error) {
+    files.forEach((file) => cleanupTempFile(file.path));
     console.error('Cloudinary multiple upload error:', error);
     throw new Error('Failed to upload files to Cloudinary');
   }
 };
 
-// Delete file from Cloudinary
+/**
+ * Delete a file from Cloudinary by its public_id.
+ * @param {string} publicId
+ */
 export const deleteFromCloudinaryFn = async (publicId) => {
+  if (!publicId) return null;
   try {
-    const result = await deleteFromCloudinary(publicId);
-    return result;
+    return await deleteFromCloudinary(publicId);
   } catch (error) {
     console.error('Cloudinary delete error:', error);
     throw new Error('Failed to delete file from Cloudinary');
   }
 };
 
-//  ERROR HANDLING
+/**
+ * Delete multiple files from Cloudinary.
+ * @param {string[]} publicIds
+ */
+export const deleteMultipleFromCloudinary = async (publicIds = []) => {
+  if (!publicIds || publicIds.length === 0) return;
+  await Promise.allSettled(publicIds.map((id) => deleteFromCloudinaryFn(id)));
+};
