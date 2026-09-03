@@ -1,264 +1,187 @@
-import * as medicalRecordService from "./medicalRecord.service.js";
-import {successResponse, errorResponse,createdResponse,notFoundResponse} from "../../utils/response.js"
+import * as medicalRecordService from './medicalRecord.service.js';
+import { successResponse, errorResponse, createdResponse, notFoundResponse } from '../../utils/response.js';
 
+// ==================== MEDICAL RECORD CONTROLLERS ====================
 
-/// medical controllers
-//create medical record
-export const createMedicalRecord = async (req,res)=>{
-    try{
-        const recordData = req.body;
-        const medicalRecord = await medicalRecordService.createMedicalRecord(recordData);
-        return createdResponse(res,medicalRecord,"Medical record created successfully")
-    }catch (error) {
-        console.error('Create doctor error:', error);
-        
-        if (error.message === 'Patient not found'  || error.message === 'Doctor not found') {
-          return notFoundResponse(res, error.message);
-        }
-    
-        
-       return errorResponse(res, error.message || 'Failed to create medical record');
-        
+export const createMedicalRecord = async (req, res) => {
+  try {
+    const medicalRecord = await medicalRecordService.createMedicalRecord(req.body);
+    return createdResponse(res, medicalRecord, 'Medical record created successfully');
+  } catch (error) {
+    console.error('Create medical record error:', error);
+    if (error.message === 'patient not found' || error.message === 'doctor not found') {
+      return notFoundResponse(res, error.message);
     }
-}
+    return errorResponse(res, error.message || 'Failed to create medical record');
+  }
+};
 
+export const getMedicalRecordById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const medicalRecord = await medicalRecordService.getMedicalRecordById(id);
+    return successResponse(res, medicalRecord, 'Medical record fetched successfully');
+  } catch (error) {
+    console.error('Get medical record error:', error);
+    if (error.message === 'medical record not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to get medical record');
+  }
+};
 
-// get medical record by id
-export const getMedicalRecordById = async (req,res)=>{
-    try{
-        const {id} = req.params;
-        const medicalRecord = await medicalRecordService.getMedicalRecordById(id);
-        return successResponse(res,medicalRecord,"Medical record fetched successfully")
-    }catch (error) {
-        console.error('Get medical record error:', error);
-        
-        if (error.message === 'Medical record not found') {
-          return notFoundResponse(res, error.message);
-        }
-    
-        
-       return errorResponse(res, error.message || 'Failed to get medical record');
-        
-    }
-}
+export const getAllMedicalRecords = async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const filters = {
+      patientId: req.query.patientId,
+      doctorId: req.query.doctorId,
+      fromDate: req.query.fromDate,
+      toDate: req.query.toDate,
+      search: req.query.search,
+    };
+    const result = await medicalRecordService.getAllMedicalRecords(page, limit, filters);
+    return successResponse(res, result, 'Medical records fetched successfully');
+  } catch (error) {
+    console.error('Get all medical records error:', error);
+    return errorResponse(res, error.message || 'Failed to get medical records');
+  }
+};
 
-// get all medical records
-export const getAllMedicalRecords = async (req,res)=>{
-    try{
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const filters = {
-            patientId: req.query.patientId,
-            doctorId: req.query.doctorId,
-            fromDate: req.query.fromDate,
-            toDate: req.query.toDate,
-            search: req.query.search,
-        };
-        const result = await medicalRecordService.getAllMedicalRecords(page, limit, filters);
-        return successResponse(res,result,"Medical records fetched successfully")   
-       
-    }catch (error) {
-        console.error('Get all medical records error:', error);
-        
-       return errorResponse(res, error.message || 'Failed to get medical records');
-        
-    }
-}
+export const updateMedicalRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedRecord = await medicalRecordService.updateMedicalRecordById(id, req.body);
+    return successResponse(res, updatedRecord, 'Medical record updated successfully');
+  } catch (error) {
+    console.error('Update medical record error:', error);
+    if (error.message === 'medical record not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to update medical record');
+  }
+};
 
+export const deleteMedicalRecord = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await medicalRecordService.deleteMedicalRecordById(id);
+    return successResponse(res, null, 'Medical record deleted successfully');
+  } catch (error) {
+    console.error('Delete medical record error:', error);
+    if (error.message === 'medical record not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to delete medical record');
+  }
+};
 
-// update medical record
-export const updateMedicalRecord = async (req,res)=>{
-    try{
-        const {id} = req.params;
-        const updateData = req.body;
-        const updatedRecord = await medicalRecordService.updateMedicalRecord(id,updateData);
-        return successResponse(res,updatedRecord,"Medical record updated successfully")
-    }catch (error) {
-        console.error('Update medical record error:', error);
-        
-        if (error.message === 'Medical record not found') {
-          return notFoundResponse(res, error.message);
-        }
-    
-        
-       return errorResponse(res, error.message || 'Failed to update medical record');
-        
-    }
-}
+// ==================== PRESCRIPTION CONTROLLERS ====================
 
-// delete medical record
-export const deleteMedicalRecord = async (req,res)=>{
-    try{
-        const {id} = req.params;
-        const deletedRecord = await medicalRecordService.deleteMedicalRecord(id);
-        return successResponse(res,deletedRecord,"Medical record deleted successfully")
-    }catch (error) {
-        console.error('Delete medical record error:', error);
-        
-        if (error.message === 'Medical record not found') {
-          return notFoundResponse(res, error.message);
-        }
-    
-        
-       return errorResponse(res, error.message || 'Failed to delete medical record');
-        
-    }
-}
+export const createPrescription = async (req, res) => {
+  try {
+    const prescription = await medicalRecordService.createPrescription(req.body);
+    return createdResponse(res, prescription, 'Prescription created successfully');
+  } catch (error) {
+    console.error('Create prescription error:', error);
+    if (error.message === 'medical record not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to create prescription');
+  }
+};
 
-// prescription controllers
-    // create prescription
-export const createPrescription = async (req,res)=>{
-    try{
-        const prescriptionData = req.body;
-        const prescription = await medicalRecordService.createPrescription(prescriptionData);
-        return createdResponse(res,prescription,"Prescription created successfully")
-    }catch (error) {
-        console.error('Create prescription error:', error);
-        
-        if (error.message === 'Medical record not found') {
-          return notFoundResponse(res, error.message);
-        }
-    
-        
-       return errorResponse(res, error.message || 'Failed to create prescription');
-        
-    }
-}
+export const getPrescriptionById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const prescription = await medicalRecordService.getPrescriptionById(id);
+    return successResponse(res, prescription, 'Prescription fetched successfully');
+  } catch (error) {
+    console.error('Get prescription error:', error);
+    if (error.message === 'prescription not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to get prescription');
+  }
+};
 
-// get prescription by id
-export const getPrescriptionById = async (req,res)=>{
-    try{
-        const {id} = req.params;
-        const prescription = await medicalRecordService.getPrescriptionById(id);
-        return successResponse(res,prescription,"Prescription fetched successfully")
-    }catch (error) {
-        console.error('Get prescription error:', error);
-        
-        if (error.message === 'Prescription not found') {
-          return notFoundResponse(res, error.message);
-        }
-    
-        
-       return errorResponse(res, error.message || 'Failed to get prescription');
-        
-    }
-}
+export const updatePrescription = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedPrescription = await medicalRecordService.updatePrescription(id, req.body);
+    return successResponse(res, updatedPrescription, 'Prescription updated successfully');
+  } catch (error) {
+    console.error('Update prescription error:', error);
+    if (error.message === 'prescription not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to update prescription');
+  }
+};
 
-// update prescription
-export const updatePrescription = async (req,res)=>{
-    try{    
-        const {id} = req.params;
-        const updateData = req.body;
-        const updatedPrescription = await medicalRecordService.updatePrescription(id,updateData);
-        return successResponse(res,updatedPrescription,"Prescription updated successfully")
-    }catch (error) {
-        console.error('Update prescription error:', error);
-        
-        if (error.message === 'Prescription not found') {
-          return notFoundResponse(res, error.message);
-        }
-    
-        
-       return errorResponse(res, error.message || 'Failed to update prescription');
-        
-    }
-}
+export const deletePrescription = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await medicalRecordService.prescriptiondelete(id);
+    return successResponse(res, null, result.message);
+  } catch (error) {
+    console.error('Delete prescription error:', error);
+    if (error.message === 'Prescription not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to delete prescription');
+  }
+};
 
-// delete prescription
-export const deletePrescription = async (req,res)=>{
-    try{
-        const {id} = req.params;
-        const deletedPrescription = await medicalRecordService.prescriptiondelete(id);
-        return successResponse(res,deletedPrescription,"Prescription deleted successfully")
-    }catch (error) {
-        console.error('Delete prescription error:', error);
-        
-        if (error.message === 'Prescription not found') {
-          return notFoundResponse(res, error.message);
-        }
-    
-        
-       return errorResponse(res, error.message || 'Failed to delete prescription');
-        
-    }
-}
+// ==================== REPORT CONTROLLERS ====================
 
-// report controllers
-// create report
-export const createReport = async (req,res)=>{
-    try{
-        const reportData = req.body;
-        const report = await medicalRecordService.createReport(reportData);
-        return createdResponse(res,report,"Report created successfully")
-    } catch (error) {
-        console.error('Create report error:', error);
-        if (error.message === 'Medical record not found') {
-          return notFoundResponse(res, error.message);
-        }
-        return errorResponse(res, error.message || 'Failed to create report');
-    }
-}
+export const createReport = async (req, res) => {
+  try {
+    // req.file is the single uploaded file (field name: 'file')
+    const report = await medicalRecordService.createReport(req.body, req.file || null);
+    return createdResponse(res, report, 'Report created successfully');
+  } catch (error) {
+    console.error('Create report error:', error);
+    if (error.message === 'medical record not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to create report');
+  }
+};
 
-// get report by id
-export const getReportById = async (req,res)=>{
-    try{
-        const {id} = req.params;
-        const report = await medicalRecordService.getReportById(id);
-        return successResponse(res,report,"Report fetched successfully")
-    } catch (error) {
-        console.error('Get report error:', error);
-        if (error.message === 'Report not found') {
-          return notFoundResponse(res, error.message);
-        }
-        return errorResponse(res, error.message || 'Failed to get report');
-    }
-}
+export const getReportById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const report = await medicalRecordService.getReportById(id);
+    return successResponse(res, report, 'Report fetched successfully');
+  } catch (error) {
+    console.error('Get report error:', error);
+    if (error.message === 'Report not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to get report');
+  }
+};
 
-// update report
-export const updateReport = async (req,res)=>{
-    try{    
-        const {id} = req.params;
-        const updateData = req.body;
-        const updatedReport = await medicalRecordService.updateReport(id,updateData);
-        return successResponse(res,updatedReport,"Report updated successfully")
-    } catch (error) {
-        console.error('Update report error:', error);
-        if (error.message === 'Report not found') {
-          return notFoundResponse(res, error.message);
-        }
-        return errorResponse(res, error.message || 'Failed to update report');
-    }
-}
+export const updateReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    // req.file is the replacement file (optional)
+    const updatedReport = await medicalRecordService.updateReport(id, req.body, req.file || null);
+    return successResponse(res, updatedReport, 'Report updated successfully');
+  } catch (error) {
+    console.error('Update report error:', error);
+    if (error.message === 'Report not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to update report');
+  }
+};
 
-// delete report
-export const deleteReport = async (req,res)=>{
-    try{
-        const {id} = req.params;
-        const deletedReport = await medicalRecordService.deleteReport(id);
-        return successResponse(res,deletedReport,"Report deleted successfully")
-    } catch (error) {
-        console.error('Delete report error:', error);
-        if (error.message === 'Report not found') {
-          return notFoundResponse(res, error.message);
-        }
-        return errorResponse(res, error.message || 'Failed to delete report');
-    }
-}
+export const deleteReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await medicalRecordService.deleteReport(id);
+    return successResponse(res, null, result.message);
+  } catch (error) {
+    console.error('Delete report error:', error);
+    if (error.message === 'Report not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to delete report');
+  }
+};
 
-// get patient medical history
+// ==================== PATIENT MEDICAL HISTORY ====================
+
 export const getPatientMedicalHistory = async (req, res) => {
-    try {
-        const { patientId } = req.params;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        
-        const history = await medicalRecordService.getPatientMedicalHistory(patientId, page, limit);
-        return successResponse(res, history, "Patient medical history fetched successfully");
-    } catch (error) {
-        console.error('Get patient history error:', error);
-        return errorResponse(res, error.message || 'Failed to fetch patient history');
-    }
-}
-
-
-
+  try {
+    const { patientId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const history = await medicalRecordService.getPatientMedicalHistory(patientId, page, limit);
+    return successResponse(res, history, 'Patient medical history fetched successfully');
+  } catch (error) {
+    console.error('Get patient history error:', error);
+    return errorResponse(res, error.message || 'Failed to fetch patient history');
+  }
+};
