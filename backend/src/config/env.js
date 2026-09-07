@@ -56,6 +56,9 @@ export const ENV = {
     parseInt(process.env.RESEND_OTP_RATE_LIMIT_MAX) || 3,
     Cloud_Name:process.env.Cloud_Name,
     Cloud_API_SECRET:process.env.Cloud_API_SECRET,
-    Cloud_API_KEY:process.env.Cloud_API_KEY
+    Cloud_API_KEY:process.env.Cloud_API_KEY,
+    KHALTI_API_KEY:process.env.KHALTI_SECRET_KEY,
+    
+
 
 };
