@@ -1,267 +1,153 @@
+import prisma from "../../config/database.js";
+// import socketEmitter from "../../utils/socketEmitter.js";
 
+export const bookAppointment = async (appointmentData) => {
+    const { patientId, doctorId, date, time, ...data } = appointmentData;
 
-// book appointment
-export const bookAppointment = async () =>{
-    const {patientId,doctorId, date,time ,...data} = appointmentData;
-
-    // check if patient exists 
-    const patient = await prisma.patient.findUnique ({
-        where:{
-            id:patientId
-        },
-        include:{
-            user:{
-                select:{
-                    fullName:true,
-                    email:true
-                }
+    const patient = await prisma.patient.findUnique({
+        where: { id: patientId },
+        include: {
+            user: {
+                select: { fullName: true, email: true, phone: true }
             }
-
         }
+    });
 
-    })
-
-    if(!patient){
-        throw new Error("Paitent not found ")
+    if (!patient) {
+        throw new Error("Patient not found");
     }
 
-    /// check if doctor exists
-     const doctor = await prisma.doctor.findUnique({
-        where:{id:doctorId},
-        include:{
-            user:{
-                select:{
-                    fullName:true
-                }
-                
+    const doctor = await prisma.doctor.findUnique({
+        where: { id: doctorId },
+        include: {
+            user: {
+                select: { fullName: true }
             }
         }
-     })
+    });
 
+    if (!doctor) {
+        throw new Error("Doctor not found");
+    }
 
-     if(!doctor){
-        throw new Error("Docotr not found")
-     }
+    const appointmentDate = new Date(date);
+    const dayOfWeek = appointmentDate.toLocaleDateString("en-US", { weekday: 'long' });
 
-     // check if doctor is available on that day
-     const appointmentDate = new Date(date)
-     const dayofWeek = appointmentDate.toLocaleDateString("en-Us",{weekday:'long'})
+    const availableDays = doctor.availableDays || [];
+    const isAvailable = availableDays.some(day => day.day === dayOfWeek);
 
+    if (!isAvailable) {
+        throw new Error(`Doctor is not available on ${dayOfWeek}`);
+    }
 
-     const availableDays = doctor.availableDays || []
-
-     const isAvailable = availableDays.some(day => day.day === dayofWeek)
-
-
-     if(!isAvailable){
-        throw new Error(`doctor is not availabe on ${dayofWeek}`)
-
-     }
-
-     // check if time  slot is availabe 
-     const existingAppointment = await prisma.appointment.findFirst({
-        where:{
+    const existingAppointment = await prisma.appointment.findFirst({
+        where: {
             doctorId,
-            date:appointmentDate,
+            date: appointmentDate,
             time,
-            status:{
-                in:['SCHEDULED','CONFIRMED']
-            }
+            status: { in: ['SCHEDULED', 'CONFIRMED'] }
         }
+    });
 
-     })
+    if (existingAppointment) {
+        throw new Error("This time slot is already booked");
+    }
 
-     if (existingAppointment){
-        throw new Error("This time slot is already booked ")
-     }
-
-
-     // check if patient has conflicting 
-     const patientConflict = await prisma.appointment.findFirst({
-        where:{
-            parentId,
-            date:appointmentDate,
+    const patientConflict = await prisma.appointment.findFirst({
+        where: {
+            patientId,
+            date: appointmentDate,
             time,
-            status:{
-                in:['SCHEDULED','CONFIRMED']
-            }
-            
+            status: { in: ['SCHEDULED', 'CONFIRMED'] }
         }
-     })
-      if (patientConflict){
-        throw new Error("already haved an appointment in this time")
-      } 
+    });
 
+    if (patientConflict) {
+        throw new Error("Patient already has an appointment at this time");
+    }
 
-      /// create appointment
-      const appointment = await prisma.appointment.create({
-        data:{
-            parentId,doctorId,date:appointmentDate,time, ... data , symptoms:data.symptoms || [],
-            status:"SCHEDULED"
+    const appointment = await prisma.appointment.create({
+        data: {
+            patientId,
+            doctorId,
+            date: appointmentDate,
+            time,
+            ...data,
+            symptoms: data.symptoms || [],
+            status: "SCHEDULED"
         },
-        include :{
-            patient:{
-                user:{
-                    select:{
-                        fullName:true,
-                        email:true,
-                        phone:true
+        include: {
+            patient: {
+                include: {
+                    user: {
+                        select: { id: true, fullName: true, email: true, phone: true }
                     }
                 }
             },
-            doctor:{
-                include:{
-                    user:{
-                        select:{
-                            fullName:true
-                        }
+            doctor: {
+                include: {
+                    user: {
+                        select: { id: true, fullName: true }
                     }
                 }
             }
         }
-      })
+    });
 
-      // create audit log 
-      await prisma.auditLog.create({
+    await prisma.auditLog.create({
         data: {
             userId: patient.userId,
             action: 'APPOINTMENT_BOOKED',
             resource: 'Appointment',
-            details: { appointmentId:appointment.id ,
-                doctorid,
-                date:appointmentDate,
+            details: {
+                appointmentId: appointment.id,
+                doctorId,
+                date: appointmentDate,
                 time
             },
-          
         },
     });
-    return appointment
 
-}
+    await socketEmitter.emitBookingCreated(appointment);
+    await socketEmitter.emitAppointmentSlotsChanged(doctorId, appointmentDate, []);
 
+    return appointment;
+};
 
-/// get  all appointment (staff)
-export const getAllAppointments = async (
-  page = 1,
-  limit = 10,
-  filters = {}
-) => {
+export const getAllAppointments = async (page = 1, limit = 10, filters = {}) => {
   const skip = (page - 1) * limit;
-
   const where = {};
 
-  // Status filter
-  if (filters.status) {
-    where.status = filters.status;
-  }
+  if (filters.status) where.status = filters.status;
+  if (filters.patientId) where.patientId = filters.patientId;
+  if (filters.doctorId) where.doctorId = filters.doctorId;
+  if (filters.startDate) where.date = { ...where.date, gte: new Date(filters.startDate) };
+  if (filters.endDate) where.date = { ...where.date, lte: new Date(filters.endDate) };
 
-  // Patient filter
-  if (filters.patientId) {
-    where.patientId = filters.patientId;
-  }
-
-  // Doctor filter
-  if (filters.doctorId) {
-    where.doctorId = filters.doctorId;
-  }
-
-  // Start date filter
-  if (filters.startDate) {
-    where.date = {
-      ...where.date,
-      gte: new Date(filters.startDate),
-    };
-  }
-
-  // End date filter
-  if (filters.endDate) {
-    where.date = {
-      ...where.date,
-      lte: new Date(filters.endDate),
-    };
-  }
-
-  // Search filter
   if (filters.search) {
     where.OR = [
-      {
-        patient: {
-          user: {
-            fullName: {
-              contains: filters.search,
-            },
-          },
-        },
-      },
-      {
-        doctor: {
-          user: {
-            fullName: {
-              contains: filters.search,
-            },
-          },
-        },
-      },
-      {
-        patient: {
-          user: {
-            email: {
-              contains: filters.search,
-            },
-          },
-        },
-      },
+      { patient: { user: { fullName: { contains: filters.search } } } },
+      { doctor: { user: { fullName: { contains: filters.search } } } },
+      { patient: { user: { email: { contains: filters.search } } } },
     ];
   }
 
   const [appointments, total] = await Promise.all([
     prisma.appointment.findMany({
       where,
-
       include: {
-        patient: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phone: true,
-              },
-            },
-          },
-        },
-
-        doctor: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                fullName: true,
-                email: true,
-                phone: true,
-              },
-            },
-          },
-        },
+        patient: { include: { user: { select: { id: true, fullName: true, email: true, phone: true } } } },
+        doctor: { include: { user: { select: { id: true, fullName: true, email: true, phone: true } } } },
       },
-
       skip,
       take: Number(limit),
-
-      orderBy: {
-        date: "desc",
-      },
+      orderBy: { date: "desc" },
     }),
-
-    prisma.appointment.count({
-      where,
-    }),
+    prisma.appointment.count({ where }),
   ]);
 
   return {
     appointments,
-
     pagination: {
       page: Number(page),
       limit: Number(limit),
@@ -271,9 +157,133 @@ export const getAllAppointments = async (
   };
 };
 
+export const getAppointmentById = async (appointmentId) => {
+  const appointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+    include: {
+      patient: { include: { user: { select: { id: true, fullName: true, email: true, phone: true } } } },
+      doctor: { include: { user: { select: { id: true, fullName: true, email: true, phone: true } } } },
+    },
+  });
 
-// get appointment by id
+  if (!appointment) throw new Error('Appointment not found');
+  return appointment;
+};
 
+export const updateAppointment = async (appointmentId, updateData) => {
+  const existingAppointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+  });
 
-// update 
-// cancel
+  if (!existingAppointment) throw new Error('Appointment not found');
+  if (existingAppointment.status === 'COMPLETED' || existingAppointment.status === 'CANCELLED') {
+    throw new Error(`Cannot update a ${existingAppointment.status.toLowerCase()} appointment`);
+  }
+
+  const previousStatus = existingAppointment.status;
+  let dateChanged = false;
+  let timeChanged = false;
+
+  if (updateData.date || updateData.time) {
+    const newDate = updateData.date ? new Date(updateData.date) : existingAppointment.date;
+    const newTime = updateData.time || existingAppointment.time;
+
+    const conflict = await prisma.appointment.findFirst({
+      where: {
+        doctorId: existingAppointment.doctorId,
+        date: newDate,
+        time: newTime,
+        status: { in: ['SCHEDULED', 'CONFIRMED'] },
+        NOT: { id: appointmentId },
+      },
+    });
+
+    if (conflict) throw new Error('This time slot is already booked');
+    updateData.date = newDate;
+    updateData.time = newTime;
+    dateChanged = true;
+    timeChanged = true;
+  }
+
+  const updated = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: updateData,
+    include: {
+      patient: { include: { user: { select: { fullName: true, email: true } } } },
+      doctor: { include: { user: { select: { fullName: true } } } },
+    },
+  });
+
+  if (updateData.status && updateData.status !== previousStatus) {
+    await socketEmitter.emitAppointmentStatusChanged(updated, previousStatus);
+  }
+
+  if (dateChanged || timeChanged) {
+    await socketEmitter.emitAppointmentSlotsChanged(updated.doctorId, updated.date, []);
+    if (dateChanged) {
+      await socketEmitter.emitAppointmentSlotsChanged(existingAppointment.doctorId, existingAppointment.date, []);
+    }
+  }
+
+  return updated;
+};
+
+export const cancelAppointment = async (appointmentId, reason) => {
+  const existingAppointment = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+  });
+
+  if (!existingAppointment) throw new Error('Appointment not found');
+  if (existingAppointment.status === 'COMPLETED') throw new Error('Cannot cancel a completed appointment');
+  if (existingAppointment.status === 'CANCELLED') throw new Error('Appointment is already cancelled');
+
+  const previousStatus = existingAppointment.status;
+
+  const cancelled = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: {
+      status: 'CANCELLED',
+      notes: reason
+        ? `${existingAppointment.notes || ''}\nCancellation reason: ${reason}`.trim()
+        : existingAppointment.notes,
+    },
+    include: {
+      patient: { include: { user: { select: { fullName: true, email: true } } } },
+      doctor: { include: { user: { select: { fullName: true } } } },
+    },
+  });
+
+  await socketEmitter.emitAppointmentStatusChanged(cancelled, previousStatus);
+  await socketEmitter.emitAppointmentSlotsChanged(cancelled.doctorId, cancelled.date, []);
+
+  return cancelled;
+};
+
+export const checkInAppointment = async (appointmentId, tokenNumber) => {
+  const existing = await prisma.appointment.findUnique({
+    where: { id: appointmentId },
+  });
+
+  if (!existing) throw new Error('Appointment not found');
+  if (existing.status === 'COMPLETED' || existing.status === 'CANCELLED') {
+    throw new Error(`Cannot check in a ${existing.status.toLowerCase()} appointment`);
+  }
+
+  const previousStatus = existing.status;
+
+  const checkedIn = await prisma.appointment.update({
+    where: { id: appointmentId },
+    data: {
+      status: 'CONFIRMED',
+    },
+    include: {
+      patient: { include: { user: { select: { fullName: true, email: true, phone: true } } } },
+      doctor: { include: { user: { select: { fullName: true } } } },
+    },
+  });
+
+  await socketEmitter.emitAppointmentStatusChanged(checkedIn, previousStatus);
+  await socketEmitter.emitQueueUpdate(checkedIn.doctorId, tokenNumber || null, [], []);
+
+  return checkedIn;
+};

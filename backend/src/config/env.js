@@ -54,11 +54,24 @@ export const ENV = {
 
   RESEND_OTP_RATE_LIMIT_MAX:
     parseInt(process.env.RESEND_OTP_RATE_LIMIT_MAX) || 3,
-    Cloud_Name:process.env.Cloud_Name,
-    Cloud_API_SECRET:process.env.Cloud_API_SECRET,
-    Cloud_API_KEY:process.env.Cloud_API_KEY,
-    KHALTI_API_KEY:process.env.KHALTI_SECRET_KEY,
-    
+  Cloud_Name: process.env.Cloud_Name,
+  Cloud_API_SECRET: process.env.Cloud_API_SECRET,
+  Cloud_API_KEY: process.env.Cloud_API_KEY,
 
+  // Khalti Payment
+  KHALTI_SECRET_KEY: process.env.KHALTI_SECRET_KEY,
+  KHALTI_RETURN_URL: process.env.KHALTI_RETURN_URL,
+  KHALTI_WEBSITE_URL: process.env.KHALTI_WEBSITE_URL,
+ 
+  KHALTI_ENVIRONMENT: process.env.KHALTI_ENVIRONMENT || process.env.KHALTI_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'test'),
+  KHALTI_REQUEST_TIMEOUT: parseInt(process.env.KHALTI_REQUEST_TIMEOUT) || 15000,
+  KHALTI_MAX_RETRIES: parseInt(process.env.KHALTI_MAX_RETRIES) || 3,
+  KHALTI_RETRY_DELAY_MS: parseInt(process.env.KHALTI_RETRY_DELAY_MS) || 1000,
+
+  // Socket.IO
+  SOCKET_CORS_ORIGIN: process.env.SOCKET_CORS_ORIGIN,
+  SOCKET_HEARTBEAT_INTERVAL: parseInt(process.env.SOCKET_HEARTBEAT_INTERVAL) || 25000,
+  SOCKET_HEARTBEAT_TIMEOUT: parseInt(process.env.SOCKET_HEARTBEAT_TIMEOUT) || 20000,
+  SOCKET_MAX_CONNECTIONS_PER_USER: parseInt(process.env.SOCKET_MAX_CONNECTIONS_PER_USER) || 5,
 
 };
