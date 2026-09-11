@@ -17,6 +17,7 @@
     "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
+    "esewa-pay": "^1.1.4",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
     "helmet": "^8.0.0",
