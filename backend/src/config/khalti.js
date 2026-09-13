@@ -39,7 +39,7 @@ const getHeaders = (includeAuth = true) => {
   return headers;
 };
 
-class KhaltiError extends Error {
+export class KhaltiError extends Error {
   constructor(message, code, detail = null, statusCode = null) {
     super(message);
     this.name = 'KhaltiError';
