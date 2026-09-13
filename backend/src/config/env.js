@@ -74,4 +74,13 @@ export const ENV = {
   SOCKET_HEARTBEAT_TIMEOUT: parseInt(process.env.SOCKET_HEARTBEAT_TIMEOUT) || 20000,
   SOCKET_MAX_CONNECTIONS_PER_USER: parseInt(process.env.SOCKET_MAX_CONNECTIONS_PER_USER) || 5,
 
+  // eSewa payment
+  ESEWA_SECRET_KEY: process.env.ESEWA_SECRET_KEY,
+  ESEWA_PRODUCT_CODE: process.env.ESEWA_PRODUCT_CODE,
+  ESEWA_SUCCESS_URL: process.env.ESEWA_SUCCESS_URL,
+  ESEWA_FAILURE_URL: process.env.ESEWA_FAILURE_URL || process.env.ESWA_FAILURE_URL,
+  ESEWA_ENVIRONMENT: (process.env.ESEWA_ENVIRONMENT || process.env.ESEWA_ENV || 'development').toLowerCase() === 'production'
+    ? 'production'
+    : 'development',
+
 };
