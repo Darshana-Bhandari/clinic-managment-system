@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home as HomeIcon,
@@ -15,11 +14,14 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  UserPlus,
   ArrowRight,
   Plus,
   CalendarPlus,
 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAppDispatch, useAppSelector } from '../../hooks/authHooks.js';
+import { logoutUser } from '../../Redux/slices/authSlice.js';
 import Button from '../ui/Button';
 
 const navLinks = [
@@ -46,10 +48,11 @@ const services = [
 const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { theme, toggleTheme } = useTheme();
+  const { isAuthenticated, user } = useAppSelector((s) => s.auth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => Boolean(localStorage.getItem('auth_token')));
   const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -75,17 +78,16 @@ const Navbar = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isServicesDropdownOpen]);
 
-  const isActive = (path) => location.pathname === path;
-
-  const closeMenus = () => {
+  // Close mobile menu on route change
+  useEffect(() => {
     setIsMenuOpen(false);
     setIsServicesDropdownOpen(false);
-  };
+  }, [location.pathname]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    setIsAuthenticated(false);
-    closeMenus();
+  const isActive = (path) => location.pathname === path;
+
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
     navigate('/');
   };
 
@@ -117,10 +119,7 @@ const Navbar = () => {
                 return (
                   <div key={link.path} className="services-dropdown relative">
                     <button
-                      onClick={() => {
-                        setIsServicesDropdownOpen((v) => !v);
-                        setIsMenuOpen(false);
-                      }}
+                      onClick={() => setIsServicesDropdownOpen((v) => !v)}
                       onMouseEnter={() => setIsServicesDropdownOpen(true)}
                       className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
                         location.pathname.startsWith('/services')
@@ -149,10 +148,7 @@ const Navbar = () => {
                               key={service.path}
                               to={service.path}
                               className="group flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-primary-50 dark:hover:bg-slate-800/60"
-                              onClick={() => {
-                                setIsServicesDropdownOpen(false);
-                                setIsMenuOpen(false);
-                              }}
+                              onClick={() => setIsServicesDropdownOpen(false)}
                             >
                               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-lg dark:bg-slate-800">
                                 {service.emoji}
@@ -255,7 +251,6 @@ const Navbar = () => {
                   <Link
                     key={link.path}
                     to={link.path}
-                    onClick={() => setIsMenuOpen(false)}
                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                       isActive(link.path)
                         ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300'

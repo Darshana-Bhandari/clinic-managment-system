@@ -1,17 +1,22 @@
-
-import { useEffect, useRef, useState } from 'react';
-import { Menu, Search, Bell, Moon, Sun, ChevronDown, User, Settings, HelpCircle, LogOut } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Menu, Search, Bell, Moon, Sun, ChevronDown, User, Settings, HelpCircle, LogOut, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { activityFeed } from '../../utils/dashboardData';
 import { useNavigate } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../hooks/authHooks.js';
+import { logoutUser } from '../../Redux/slices/authSlice.js';
+import { getInitials } from '../../utils/helpers.js';
 
 const Topbar = ({ onMenu, title, subtitle }) => {
   const { theme, toggleTheme } = useTheme();
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const { user } = useAppSelector((s) => s.auth);
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [activeModal, setActiveModal] = useState(null); // 'profile' | 'settings' | 'help'
+  const [toast, setToast] = useState('');
   const ref = useRef(null);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const onClick = (e) => {
@@ -24,10 +29,17 @@ const Topbar = ({ onMenu, title, subtitle }) => {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
-  const handleAction = (item) => {
+  const displayName = user?.fullName || 'User';
+  const displayRole = user?.role ? user.role.charAt(0) + user.role.slice(1).toLowerCase() : 'User';
+  const displayEmail = user?.email || '';
+  const displayPhone = user?.phone || '';
+  const avatarInitials = getInitials(displayName);
+
+  const handleAction = async (item) => {
     setProfileOpen(false);
     if (item === 'Log out') {
-      navigate('/login');
+      await dispatch(logoutUser());
+      navigate('/');
     } else {
       setActiveModal(item);
     }
@@ -109,13 +121,12 @@ const Topbar = ({ onMenu, title, subtitle }) => {
             onClick={() => { setProfileOpen((v) => !v); setNotifOpen(false); }}
             className="flex items-center gap-3 rounded-2xl p-1.5 transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
           >
-            {/* Teal Avatar */}
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-500 font-display text-xs font-extrabold text-white shadow-sm">
-              DR
+              {avatarInitials}
             </span>
             <span className="hidden text-left sm:block">
-              <span className="block text-sm font-bold leading-tight text-slate-900 dark:text-white">Dr. Rina Adhikari</span>
-              <span className="block text-xs leading-tight text-slate-400">Administrator</span>
+              <span className="block text-sm font-bold leading-tight text-slate-900 dark:text-white">{displayName}</span>
+              <span className="block text-xs leading-tight text-slate-400">{displayRole}</span>
             </span>
             <ChevronDown className="h-4 w-4 text-slate-400" />
           </button>
@@ -123,8 +134,8 @@ const Topbar = ({ onMenu, title, subtitle }) => {
           {profileOpen && (
             <div className="animate-in fade-in zoom-in-95 absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-2 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
               <div className="border-b border-slate-100 px-3 py-2 text-xs dark:border-slate-800 sm:hidden">
-                <p className="font-bold text-slate-900 dark:text-white">Dr. Rina Adhikari</p>
-                <p className="text-slate-400">Administrator</p>
+                <p className="font-bold text-slate-900 dark:text-white">{displayName}</p>
+                <p className="text-slate-400">{displayRole}</p>
               </div>
 
               <div className="space-y-0.5 py-1">
@@ -183,14 +194,18 @@ const Topbar = ({ onMenu, title, subtitle }) => {
               {activeModal === 'My profile' && (
                 <div className="space-y-3 text-sm">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 font-display text-base font-extrabold text-white">DR</span>
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-teal-500 font-display text-base font-extrabold text-white">{avatarInitials}</span>
                     <div>
-                      <p className="font-bold text-slate-900 dark:text-white">Dr. Rina Adhikari</p>
-                      <p className="text-xs text-slate-500">Super Administrator</p>
+                      <p className="font-bold text-slate-900 dark:text-white">{displayName}</p>
+                      <p className="text-xs text-slate-500">{displayRole}</p>
                     </div>
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Email: rina.adhikari@clinic.np</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">Phone: +977 9841234567</p>
+                  {displayEmail && (
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Email: {displayEmail}</p>
+                  )}
+                  {displayPhone && (
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Phone: {displayPhone}</p>
+                  )}
                 </div>
               )}
 
