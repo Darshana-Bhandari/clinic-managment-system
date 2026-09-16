@@ -33,7 +33,7 @@ import AdminStaff from '../pages/dashboard/admin/AdminStaff';
 import StaffQueue from '../pages/dashboard/staff/StaffQueue';
 import StaffBilling from '../pages/dashboard/staff/StaffBilling';
 import AdminReports from '../pages/dashboard/admin/AdminReports';
-import AdminSettings from '../pages/dashboard/admin/AdminSettings';
+import AdminSettings from '../pages/dashboard/admin/AdminSetting';
 import PatientAppointments from '../pages/dashboard/patient/PatientAppointments';
 import PatientHistory from '../pages/dashboard/patient/PatientHistory';
 
