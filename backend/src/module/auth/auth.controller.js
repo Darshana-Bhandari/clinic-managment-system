@@ -14,7 +14,8 @@ import { uploadToCloudinarySingle, deleteFromCloudinaryFn } from '../../config/m
 import { setAccessTokenCookie, setRefreshTokenCookie, clearTokens } from '../../utils/cookie.js';
 import { 
     registerSchema, 
-    loginSchema, 
+    loginSchema,
+    adminLoginSchema,
     verifyEmailSchema,
     resendVerificationSchema,
     forgotPasswordSchema,
@@ -98,6 +99,68 @@ export const login = async (req, res) => {
         }
         
         return errorResponse(res, error.message || 'Login failed');
+    }
+};
+
+export const adminLogin = async (req, res) => {
+    try {
+        const validatedData = await adminLoginSchema.parseAsync(req.body);
+        const result = await authService.initiateAdminLogin(
+            validatedData.email,
+            validatedData.password
+        );
+        return successResponse(res, result, result.message || MESSAGES.OTP_SENT);
+    } catch (error) {
+        console.error('Admin login error:', error);
+
+        if (error.name === 'ZodError') {
+            return handleZodError(res, error);
+        }
+        if (error.message === MESSAGES.INVALID_CREDENTIALS) {
+            return unauthorizedResponse(res, error.message);
+        }
+        if (error.message === MESSAGES.ACCOUNT_DISABLED) {
+            return forbiddenResponse(res, error.message);
+        }
+        if (error.message.includes('Please wait')) {
+            return errorResponse(res, error.message, 429);
+        }
+
+        return errorResponse(res, error.message || 'Admin login failed');
+    }
+};
+
+export const verifyAdminLogin = async (req, res) => {
+    try {
+        const validatedData = await verifyEmailSchema.parseAsync(req.body);
+        const userAgent = req.get('User-Agent');
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        const result = await authService.completeAdminLogin(
+            validatedData.email,
+            validatedData.otp,
+            userAgent,
+            ipAddress
+        );
+
+        setAccessTokenCookie(res, result.accessToken);
+        setRefreshTokenCookie(res, result.refreshToken);
+
+        return successResponse(res, {
+            user: result.user,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+        }, MESSAGES.USER_LOGGED_IN);
+    } catch (error) {
+        console.error('Verify admin login error:', error);
+
+        if (error.name === 'ZodError') {
+            return handleZodError(res, error);
+        }
+        if (error.message === MESSAGES.INVALID_OTP || error.message === MESSAGES.OTP_EXPIRED) {
+            return errorResponse(res, error.message, 400);
+        }
+
+        return unauthorizedResponse(res, error.message || 'Admin verification failed');
     }
 };
 
