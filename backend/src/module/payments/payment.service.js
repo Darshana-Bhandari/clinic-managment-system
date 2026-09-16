@@ -419,3 +419,122 @@ export const getAllPayments = async (page = 1, limit = 10, filters = {}) => {
 export const getPatientPaymentHistory = async (patientId, page = 1, limit = 10) => {
     return getPaymentHistory(patientId, page, limit);
 };
+
+export const getTransactionHistory = async (filters = {}, page = 1, limit = 50) => {
+    const skip = (page - 1) * limit;
+    const where = {};
+
+    if (filters.method) where.method = filters.method;
+    if (filters.status) where.status = filters.status;
+    if (filters.billId) where.billId = filters.billId;
+    if (filters.appointmentId) where.appointmentId = filters.appointmentId;
+    if (filters.patientId) {
+        where.bill = { patientId: filters.patientId };
+    }
+    if (filters.fromDate) {
+        where.paymentDate = { ...(where.paymentDate || {}), gte: new Date(filters.fromDate) };
+    }
+    if (filters.toDate) {
+        where.paymentDate = { ...(where.paymentDate || {}), lte: new Date(filters.toDate) };
+    }
+    if (filters.transactionId) {
+        where.transactionId = { contains: filters.transactionId, mode: 'insensitive' };
+    }
+    if (filters.search) {
+        where.OR = [
+            { notes: { contains: filters.search, mode: 'insensitive' } },
+            { transactionId: { contains: filters.search, mode: 'insensitive' } },
+        ];
+    }
+
+    const [transactions, total, aggregate] = await Promise.all([
+        prisma.payment.findMany({
+            where,
+            include: {
+                bill: {
+                    include: {
+                        patient: {
+                            include: { user: { select: { id: true, fullName: true, email: true, phone: true } } },
+                        },
+                    },
+                },
+            },
+            skip,
+            take: Number(limit),
+            orderBy: { paymentDate: 'desc' },
+        }),
+        prisma.payment.count({ where }),
+        prisma.payment.aggregate({
+            where: { ...where, status: 'COMPLETED' },
+            _sum: { amount: true },
+            _count: { _all: true },
+        }),
+    ]);
+
+    const summary = {
+        totalTransactions: total,
+        completedCount: aggregate._count._all || 0,
+        totalVolume: aggregate._sum.amount || 0,
+    };
+
+    return {
+        transactions,
+        pagination: {
+            page: Number(page),
+            limit: Number(limit),
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+        summary,
+    };
+};
+
+export const getPaymentSummary = async (filters = {}) => {
+    const where = {};
+    if (filters.fromDate) where.paymentDate = { ...(where.paymentDate || {}), gte: new Date(filters.fromDate) };
+    if (filters.toDate) where.paymentDate = { ...(where.paymentDate || {}), lte: new Date(filters.toDate) };
+
+    const all = await prisma.payment.findMany({ where, select: { method: true, status: true, amount: true } });
+
+    const summary = {
+        totalCount: all.length,
+        totalVolume: 0,
+        byMethod: {},
+        byStatus: {},
+    };
+
+    for (const tx of all) {
+        if (tx.status === 'COMPLETED') summary.totalVolume += Number(tx.amount);
+        summary.byMethod[tx.method] = (summary.byMethod[tx.method] || 0) + Number(tx.amount || 0);
+        summary.byStatus[tx.status] = (summary.byStatus[tx.status] || 0) + 1;
+    }
+
+    return summary;
+};
+
+export const getTransactionsCSV = async (filters = {}) => {
+    const result = await getTransactionHistory(filters, 1, 100000);
+    const rows = [
+        ['Date', 'Transaction ID', 'Patient Name', 'Patient Email', 'Patient Phone',
+         'Bill ID', 'Method', 'Status', 'Amount (NPR)', 'Notes', 'Payment ID'],
+    ];
+
+    for (const p of result.transactions) {
+        const patient = p.bill?.patient?.user || {};
+        rows.push([
+            p.paymentDate?.toISOString() || p.createdAt?.toISOString() || '',
+            p.transactionId || '',
+            patient.fullName || '',
+            patient.email || '',
+            patient.phone || '',
+            p.billId || '',
+            p.method,
+            p.status,
+            String(Number(p.amount || 0).toFixed(2)),
+            (p.notes || '').replace(/\n/g, ' '),
+            p.id,
+        ]);
+    }
+
+    return rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+};

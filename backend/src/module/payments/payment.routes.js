@@ -1,29 +1,85 @@
 import express from 'express';
 import * as paymentController from './payment.controller.js';
-import{paymentSchema, getPaymentQuerySchema,updatePaymentSchema,refundPaymentSchema} from './payment.schema.js';
+import { verifyToken, authorize } from '../../middleware/authMiddleware.js';
 import { validate } from '../../middleware/validateMiddleware.js';
-import {verifyToken,authorize} from '../../middleware/authMiddleware.js';
 import { ROLES } from '../../constans/roles.js';
+import {
+  strictAuthLimiter,
+  paymentInitiateLimiter,
+  paymentVerifyLimiter,
+} from '../../middleware/rateLimiter.js';
+import {
+  createPaymentSchema,
+  updatePaymentSchema,
+  refundPaymentSchema,
+} from './payment.schema.js';
+
 const router = express.Router();
-router.use(verifyToken); // Apply verifyToken middleware to all routes
 
-//create payment
-router.post('/',authorize(ROLES.ADMIN,ROLES.RECEPTIONIST),validate(paymentSchema),paymentController.createaPayment);
+router.use(verifyToken);
 
-// get all payments (Admin,docotr, receptionist)
-router.get('/',authorize(ROLES.ADMIN,ROLES.DOCTOR,ROLES.RECEPTIONIST),validate(getPaymentQuerySchema),paymentController.getAllPayments);
+// Summary + Transactions (admin/staff) — place before `/:id` to avoid clash
+router.get(
+  '/summary',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST),
+  paymentController.getPaymentSummary,
+);
 
-// get payment by bill id (Admin,docotr, receptionist)
-router.get('/bill/:billId',authorize(ROLES.ADMIN,ROLES.DOCTOR,ROLES.RECEPTIONIST),paymentController.getPaymentByBillId);
+router.get(
+  '/transactions',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR),
+  paymentController.getTransactionHistory,
+);
 
-// update payment (Admin only)
-router.put('/:id',authorize(ROLES.ADMIN),validate(updatePaymentSchema),paymentController.updatePayment);
+router.get(
+  '/transactions/export/csv',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST),
+  paymentController.downloadTransactionsCSV,
+);
 
-// refund payment (Admin only)
-router.post('/:id/refund',authorize(ROLES.ADMIN),validate(refundPaymentSchema),paymentController.refundPayment);
-// get payment history(Admin,patient, receptionist)
-router.get('/history/:patientId',authorize(ROLES.ADMIN,ROLES.PATIENT,ROLES.RECEPTIONIST),paymentController.getPatientPaymentHistory);
+// Create payment (manual cash / POS record)
+router.post(
+  '/',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST),
+  paymentInitiateLimiter,
+  validate(createPaymentSchema),
+  paymentController.createPayment,
+);
 
+// Patient-level history — before /:id
+router.get(
+  '/patient/:patientId',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT),
+  paymentController.getPatientPaymentHistory,
+);
 
+// Payments for a single bill
+router.get(
+  '/bill/:billId',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT),
+  paymentController.getPaymentByBillId,
+);
 
-export  default router;
+// Single payment CRUD
+router.get(
+  '/:id',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT),
+  paymentController.getPaymentById,
+);
+
+router.put(
+  '/:id',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST),
+  validate(updatePaymentSchema),
+  paymentController.updatePayment,
+);
+
+router.post(
+  '/:id/refund',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST),
+  strictAuthLimiter,
+  validate(refundPaymentSchema),
+  paymentController.refundPayment,
+);
+
+export default router;

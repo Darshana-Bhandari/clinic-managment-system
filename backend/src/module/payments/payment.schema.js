@@ -1,14 +1,22 @@
-import {z} from "zod";
+import { z } from 'zod';
 
+const PAYMENT_METHODS = ['CASH', 'KHALTI', 'ESEWA'];
+const PAYMENT_STATUSES = ['PENDING', 'COMPLETED', 'FAILED'];
 
-export const paymentSchema = z.object({
-    billId:z.string().min(1,"Bill ID is required"),
-    amount:z.number().positive("Amount must be a positive number"),
-    method:z.enum(["CASH","KHALTI","ESEWA"],"Payment method must be one of CASH, KHALTI, or ESEWA"),
-    transactionId:z.string().optional(),
-    note:z.string().max(500,"Note cannot exceed 500 characters").optional(),
-
+export const createPaymentSchema = z.object({
+  billId: z.string().min(1, 'Bill ID is required'),
+  amount: z.number().positive('Amount must be a positive number'),
+  method: z.enum(PAYMENT_METHODS, {
+    errorMap: () => ({ message: 'Payment method must be one of CASH, KHALTI, or ESEWA' }),
+  }),
+  transactionId: z.string().optional(),
+  note: z.string().max(500, 'Note cannot exceed 500 characters').optional(),
+  status: z.enum(PAYMENT_STATUSES, {
+    errorMap: () => ({ message: 'Payment status must be one of PENDING, COMPLETED, or FAILED' }),
+  }).optional().default('COMPLETED'),
 });
+
+export const paymentSchema = createPaymentSchema;
 
 
 
