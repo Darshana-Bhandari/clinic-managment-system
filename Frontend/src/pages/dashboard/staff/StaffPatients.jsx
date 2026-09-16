@@ -1,9 +1,8 @@
-
-import { Search, UserPlus, Globe, Building2, Phone, X, CheckCircle2, UserCheck } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Search, UserPlus, Phone, X, CheckCircle2, Pencil, LoaderCircle } from 'lucide-react';
 import SectionCard from '../../../components/sections/SectionCard';
-import { patients as initialPatients } from '../../../utils/dashboardData';
-import { doctorsData } from '../../../utils/dummyData';
-import CustomDoctorSelect from '../../../components/ui/CustomDoctorSelect';
+import { fetchPatients, savePatientProfile } from '../../../Redux/slices/patientSlice.js';
 
 const avatarTones = [
   'bg-primary-100 text-primary-700',
@@ -13,27 +12,34 @@ const avatarTones = [
   'bg-amber-100 text-amber-700',
 ];
 
-// Add doctor assignment to initial patients for consistent UI
-const enrichedInitialPatients = initialPatients.map((p, idx) => ({
-  ...p,
-  assignedDoctor: p.assignedDoctor || doctorsData[idx % doctorsData.length]?.name || 'Dr. Ram Sharma',
-}));
+const emptyForm = {
+  dateOfBirth: '', gender: 'MALE', bloodGroup: '', allergies: '',
+  address: '', city: '', province: '', country: 'Nepal', zipCode: '',
+};
+
+const toRow = (patient) => ({
+  ...patient,
+  name: patient.user?.fullName || 'Unnamed patient',
+  phone: patient.user?.phone || 'No phone number',
+  email: patient.user?.email || '',
+  age: patient.dateOfBirth ? new Date().getFullYear() - new Date(patient.dateOfBirth).getFullYear() : '-',
+  visits: patient.appointments?.length || 0,
+});
 
 const Patients = () => {
-  const [patientList, setPatientList] = useState(enrichedInitialPatients);
+  const dispatch = useDispatch();
+  const { patients, pagination, isLoading, error } = useSelector((state) => state.patient);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const [query, setQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [formData, setFormData] = useState(emptyForm);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    age: '',
-    gender: 'Male',
-    city: 'Kathmandu',
-    source: 'staff',
-    assignedDoctor: doctorsData[0]?.name || 'Dr. Ram Sharma',
-  });
+  useEffect(() => {
+    dispatch(fetchPatients({ page: 1, limit: 20 }));
+  }, [dispatch]);
+
+  const patientList = useMemo(() => patients.map(toRow), [patients]);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -42,40 +48,36 @@ const Patients = () => {
         !q ||
         p.name.toLowerCase().includes(q) ||
         p.id.toLowerCase().includes(q) ||
-        (p.assignedDoctor && p.assignedDoctor.toLowerCase().includes(q))
+        p.phone.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q)
     );
   }, [query, patientList]);
 
-  const handleRegister = (e) => {
+  const openEditor = (patient = null) => {
+    setSelectedPatient(patient);
+    setFormData(patient ? {
+      dateOfBirth: patient.dateOfBirth ? patient.dateOfBirth.slice(0, 10) : '',
+      gender: patient.gender || 'MALE', bloodGroup: patient.bloodGroup || '',
+      allergies: Array.isArray(patient.allergies) ? patient.allergies.join(', ') : patient.allergies || '',
+      address: patient.address || '', city: patient.city || '', province: patient.province || '',
+      country: patient.country || 'Nepal', zipCode: patient.zipCode || '',
+    } : emptyForm);
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.phone) return;
-
-    const newId = `P-${Math.floor(1000 + Math.random() * 9000)}`;
-    const newPatient = {
-      id: newId,
-      name: formData.name,
-      phone: formData.phone,
-      age: Number(formData.age) || 25,
-      gender: formData.gender,
-      source: formData.source,
-      assignedDoctor: formData.assignedDoctor,
-      visits: 1,
-      lastVisit: 'Today',
-    };
-
-    setPatientList([newPatient, ...patientList]);
-    setIsModalOpen(false);
-    setFormData({
-      name: '',
-      phone: '',
-      age: '',
-      gender: 'Male',
-      city: 'Kathmandu',
-      source: 'staff',
-      assignedDoctor: doctorsData[0]?.name || 'Dr. Ram Sharma',
-    });
-    setSuccessMessage(`Patient ${newPatient.name} (${newId}) assigned to ${newPatient.assignedDoctor} successfully!`);
-    setTimeout(() => setSuccessMessage(''), 4000);
+    const payload = { ...formData };
+    if (payload.allergies) payload.allergies = payload.allergies.split(',').map((item) => item.trim()).filter(Boolean);
+    const result = await dispatch(savePatientProfile({ patientId: selectedPatient?.id, payload }));
+    if (savePatientProfile.fulfilled.match(result)) {
+      setIsModalOpen(false);
+      setSelectedPatient(null);
+      setFormData(emptyForm);
+      dispatch(fetchPatients({ page: pagination.page, limit: pagination.limit }));
+      setSuccessMessage(`Patient profile ${selectedPatient ? 'updated' : 'created'} successfully.`);
+      setTimeout(() => setSuccessMessage(''), 4000);
+    }
   };
 
   return (
@@ -100,7 +102,7 @@ const Patients = () => {
           />
         </div>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => openEditor()}
           className="btn btn-primary btn-sm flex items-center gap-2"
         >
           <UserPlus className="h-4 w-4" /> Register patient
@@ -114,17 +116,17 @@ const Patients = () => {
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-slate-400 dark:border-slate-800">
                 <th className="px-5 py-3 font-semibold">Patient</th>
-                <th className="px-5 py-3 font-semibold">Assigned Doctor</th>
+                <th className="px-5 py-3 font-semibold">Email</th>
                 <th className="hidden px-5 py-3 font-semibold sm:table-cell">Contact</th>
                 <th className="hidden px-5 py-3 font-semibold md:table-cell">Age / Gender</th>
-                <th className="hidden px-5 py-3 font-semibold lg:table-cell">Source</th>
+                <th className="hidden px-5 py-3 font-semibold lg:table-cell">Blood group</th>
                 <th className="px-5 py-3 font-semibold">Visits</th>
                 <th className="hidden px-5 py-3 font-semibold sm:table-cell">Last visit</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800/70">
               {rows.map((p, i) => (
-                <tr key={p.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                <tr key={p.id} onClick={() => setSelectedPatient(p)} className="cursor-pointer transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40">
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <span className={`flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold dark:bg-slate-800 dark:text-slate-200 ${avatarTones[i % avatarTones.length]}`}>
@@ -136,12 +138,7 @@ const Patients = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3">
-                    <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                      <UserCheck className="h-4 w-4 text-primary-600 dark:text-primary-400" />
-                      {p.assignedDoctor || 'Dr. Ram Sharma'}
-                    </span>
-                  </td>
+                  <td className="px-5 py-3 text-slate-500">{p.email || 'Profile incomplete'}</td>
                   <td className="hidden px-5 py-3 sm:table-cell">
                     <span className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                       <Phone className="h-3.5 w-3.5 text-slate-400" /> {p.phone}
@@ -150,22 +147,18 @@ const Patients = () => {
                   <td className="hidden px-5 py-3 text-slate-600 dark:text-slate-300 md:table-cell">
                     {p.age} · {p.gender}
                   </td>
-                  <td className="hidden px-5 py-3 lg:table-cell">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500">
-                      {p.source === 'web' ? (
-                        <Globe className="h-3.5 w-3.5 text-primary-500" />
-                      ) : (
-                        <Building2 className="h-3.5 w-3.5 text-sky-500" />
-                      )}
-                      {p.source === 'web' ? 'Website' : 'Staff Walk-in'}
-                    </span>
-                  </td>
+                  <td className="hidden px-5 py-3 lg:table-cell text-slate-500">{p.bloodGroup || 'Not recorded'}</td>
                   <td className="px-5 py-3">
                     <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       {p.visits}
                     </span>
                   </td>
-                  <td className="hidden px-5 py-3 text-slate-500 sm:table-cell">{p.lastVisit}</td>
+                  <td className="hidden px-5 py-3 text-slate-500 sm:table-cell">{p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '—'}</td>
+                  <td className="px-5 py-3 text-right">
+                    <button type="button" onClick={(e) => { e.stopPropagation(); openEditor(p); }} className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900">
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -173,7 +166,10 @@ const Patients = () => {
         </div>
       </SectionCard>
 
-      {/* Register Patient Modal */}
+      {isLoading && <div className="flex items-center gap-2 text-sm text-slate-500"><LoaderCircle className="h-4 w-4 animate-spin" /> Loading patient records...</div>}
+      {error && <p className="text-sm text-rose-600">{error}</p>}
+
+      {/* Patient profile editor */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto animate-in fade-in zoom-in-95 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
@@ -184,44 +180,30 @@ const Patients = () => {
               </button>
             </div>
 
-            <form onSubmit={handleRegister} className="mt-4 space-y-4">
+            <form onSubmit={handleSave} className="mt-4 space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Full Name *</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Date of birth</label>
                 <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. Anish Maharjan"
+                  type="date"
+                  value={formData.dateOfBirth}
+                  onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Phone Number *</label>
-                <input
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="98XXXXXXXX"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                />
+                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Blood group</label>
+                <input value={formData.bloodGroup} onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })} placeholder="O+" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
-
-              <CustomDoctorSelect
-                value={formData.assignedDoctor}
-                onChange={(val) => setFormData({ ...formData, assignedDoctor: val })}
-              />
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Age</label>
+                  <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">City</label>
                   <input
-                    type="number"
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    placeholder="28"
+                    type="text"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="Kathmandu"
                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                   />
                 </div>
@@ -232,24 +214,15 @@ const Patients = () => {
                     onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                     className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                   >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
                   </select>
                 </div>
               </div>
 
-              <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Registration Source</label>
-                <select
-                  value={formData.source}
-                  onChange={(e) => setFormData({ ...formData, source: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                >
-                  <option value="staff">Staff Walk-in</option>
-                  <option value="web">Online Web Portal</option>
-                </select>
-              </div>
+              <div><label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Allergies</label><input value={formData.allergies} onChange={(e) => setFormData({ ...formData, allergies: e.target.value })} placeholder="Separate multiple allergies with commas" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" /></div>
+              <div><label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Address</label><input value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" /></div>
 
               <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
                 <button
@@ -263,7 +236,7 @@ const Patients = () => {
                   type="submit"
                   className="rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-primary-700"
                 >
-                  Register Patient
+                  {selectedPatient ? 'Save changes' : 'Create profile'}
                 </button>
               </div>
             </form>
