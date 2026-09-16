@@ -20,6 +20,8 @@ import ServiceDetail from '../pages/ServiceDetail';
 import Booking from '../pages/Booking';
 import Login from '../pages/Login.jsx';
 import Register from '../pages/Register.jsx';
+import ForgotPassword from '../pages/ForgotPassword.jsx';
+import ResetPassword from '../pages/ResetPassword.jsx';
 
 import AdminOverview from '../pages/dashboard/admin/AdminOverview';
 import StaffOverview from '../pages/dashboard/staff/StaffOverview';
@@ -238,6 +240,44 @@ const router = createBrowserRouter([
         element: (
           <RouteWrapper>
             <Register />
+          </RouteWrapper>
+        ),
+      },
+    ],
+  },
+
+  {
+    path: '/forgot-password',
+    element: (
+      <GuestRoute>
+        <AuthLayout />
+      </GuestRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: (
+          <RouteWrapper>
+            <ForgotPassword />
+          </RouteWrapper>
+        ),
+      },
+    ],
+  },
+
+  {
+    path: '/reset-password',
+    element: (
+      <GuestRoute>
+        <AuthLayout />
+      </GuestRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: (
+          <RouteWrapper>
+            <ResetPassword />
           </RouteWrapper>
         ),
       },
