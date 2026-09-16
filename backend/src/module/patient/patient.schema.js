@@ -4,8 +4,8 @@
 
  export const createPatientSchema = z.object({
     // userId is NOT in the body — it comes from req.user.id (auth token)
-    dateOfBirth: z.string().datetime({ offset: true }).optional(),
-    gender: z.enum(["Male", "Female", "others"]).optional(),
+    dateOfBirth: z.string().optional(),
+    gender: z.enum(["MALE", "FEMALE", "OTHER", "Male", "Female", "others"]).optional(),
     bloodGroup: z.string().optional(),
     allergies: z.union([z.string(), z.array(z.string())]).optional(),
     medicalHistory: z.any().optional(),
@@ -26,8 +26,8 @@
 
  /// update patient schema — all fields optional, userId comes from URL param /:id
  export const updatePatientSchema = z.object({
-    dateOfBirth: z.string().datetime({ offset: true }).optional(),
-    gender: z.enum(["Male", "Female", "others"]).optional(),
+    dateOfBirth: z.string().optional(),
+    gender: z.enum(["MALE", "FEMALE", "OTHER", "Male", "Female", "others"]).optional(),
     bloodGroup: z.string().optional(),
     allergies: z.union([z.string(), z.array(z.string())]).optional(),
     medicalHistory: z.any().optional(),

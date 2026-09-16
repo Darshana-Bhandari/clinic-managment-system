@@ -5,11 +5,20 @@ import { uploadMultipleToCloudinaryFn, deleteFromCloudinaryFn, deleteMultipleFro
 // ==================== HELPERS ====================
 
 // Maps raw body data to Prisma-compatible types for Patient model
+const mapGender = (gender) => {
+  if (!gender) return undefined;
+  const value = String(gender).toUpperCase();
+  if (value === 'OTHERS') return 'OTHER';
+  if (['MALE', 'FEMALE', 'OTHER'].includes(value)) return value;
+  return undefined;
+};
+
 const mapPatientData = (data) => ({
   ...data,
   allergies: Array.isArray(data.allergies) ? data.allergies : (data.allergies ?? null),
   medicalHistory: data.medicalHistory ?? null,
   dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : undefined,
+  gender: mapGender(data.gender),
 });
 
 // ==================== CREATE PATIENT ====================
