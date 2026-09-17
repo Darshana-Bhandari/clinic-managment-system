@@ -175,7 +175,7 @@ export const downloadTransactionsCSV = async (req, res) => {
 };
 
 export default {
-  createaPayment,
+  createPayment,
   getAllPayments,
   getPaymentById,
   getPaymentByBillId,
