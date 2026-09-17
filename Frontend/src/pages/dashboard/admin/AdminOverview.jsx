@@ -16,7 +16,7 @@ import {
   CreditCard,
   Check,
 } from 'lucide-react';
-import StatCard from '../../../components/sections/StatCar';
+import StatCard from '../../../components/sections/StatCard';
 import SectionCard from '../../../components/sections/SectionCard';
 import AreaChart from '../../../components/sections/AreaChart';
 import DonutChart from '../../../components/sections/DonutChart';

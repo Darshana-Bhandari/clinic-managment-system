@@ -1,5 +1,11 @@
 import React from 'react';
-import { createBrowserRouter, RouterProvider, Navigate, useLocation } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+  useLocation,
+} from 'react-router-dom';
+
 import { useAppSelector } from '../hooks/authHooks.js';
 
 import Layout from '../components/layout/Layout';
@@ -18,32 +24,55 @@ import NotFound from '../pages/Error';
 import Service from '../pages/Service';
 import ServiceDetails from '../pages/ServiceDetails';
 import Booking from '../pages/Booking';
+
 import Login from '../pages/Login.jsx';
 import Register from '../pages/Register.jsx';
 import ForgotPassword from '../pages/ForgotPassword.jsx';
 import ResetPassword from '../pages/ResetPassword.jsx';
 
+// ============================================================
+// Admin pages
+// ============================================================
+
 import AdminOverview from '../pages/dashboard/admin/AdminOverview';
+import AdminDoctors from '../pages/dashboard/admin/AdminDoctors';
+import AdminStaff from '../pages/dashboard/admin/AdminStaff';
+import AdminReports from '../pages/dashboard/admin/AdminReports';
+import AdminSettings from '../pages/dashboard/admin/AdminSetting';
+
+// ============================================================
+// Staff pages
+// ============================================================
+
 import StaffOverview from '../pages/dashboard/staff/StaffOverview';
 import StaffAppointment from '../pages/dashboard/staff/StaffAppointment';
 import StaffPatients from '../pages/dashboard/staff/StaffPatients';
 import StaffSetting from '../pages/dashboard/staff/StaffSetting';
-import AdminDoctors from '../pages/dashboard/admin/AdminDoctors';
-import AdminStaff from '../pages/dashboard/admin/AdminStaff';
 import StaffQueue from '../pages/dashboard/staff/StaffQueue';
 import StaffBilling from '../pages/dashboard/staff/StaffBilling';
-import AdminReports from '../pages/dashboard/admin/AdminReports';
-import AdminSettings from '../pages/dashboard/admin/AdminSetting';
-import PatientAppointments from '../pages/dashboard/patient/PatientAppointments';
+
+// ============================================================
+// Patient pages
+// ============================================================
+
+import PatientAppointments from '../pages/dashboard/patient/patientAppointment';
 import PatientHistory from '../pages/dashboard/patient/PatientHistory';
 
+// ============================================================
+// Doctor pages
+// ============================================================
+
 import DoctorOverview from '../pages/dashboard/doctor/DoctorOverview';
-import DoctorAppointments from '../pages/dashboard/doctor/DoctorAppointments';
+import DoctorAppointments from '../pages/dashboard/doctor/DoctorAppotment';
 import DoctorPatients from '../pages/dashboard/doctor/DoctorPatients';
-import DoctorRecords from '../pages/dashboard/doctor/DoctorRecords';
-import DoctorSettings from '../pages/dashboard/doctor/DoctorSettings';
+import DoctorRecords from '../pages/dashboard/doctor/DoctorRecord';
+import DoctorSettings from '../pages/dashboard/doctor/DoctorSetting';
 
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+
+// ============================================================
+// ROLE DASHBOARD MAP
+// ============================================================
 
 const ROLE_DASHBOARD_MAP = {
   ADMIN: '/admin',
@@ -51,6 +80,10 @@ const ROLE_DASHBOARD_MAP = {
   RECEPTIONIST: '/staff',
   PATIENT: '/patient',
 };
+
+// ============================================================
+// ROUTE WRAPPER
+// ============================================================
 
 const RouteWrapper = ({ children }) => (
   <React.Suspense
@@ -64,18 +97,30 @@ const RouteWrapper = ({ children }) => (
   </React.Suspense>
 );
 
+// ============================================================
+// PROTECTED ROUTE
+// ============================================================
+
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, user, isLoading } = useAppSelector((s) => s.auth);
+  const { isAuthenticated, user, isLoading } = useAppSelector(
+    (state) => state.auth
+  );
+
   const location = useLocation();
 
+  // Authentication status is still being checked
   if (isLoading) {
     return (
       <div className="flex-center min-h-[100vh]">
-        <LoadingSpinner size="lg" text="Verifying authentication..." />
+        <LoadingSpinner
+          size="lg"
+          text="Verifying authentication..."
+        />
       </div>
     );
   }
 
+  // User is not logged in
   if (!isAuthenticated) {
     return (
       <Navigate
@@ -86,6 +131,7 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     );
   }
 
+  // Check user role
   if (requiredRole) {
     const userRole = user?.role?.toUpperCase();
     const targetRole = requiredRole.toUpperCase();
@@ -96,7 +142,9 @@ const ProtectedRoute = ({ children, requiredRole }) => {
         : [targetRole];
 
     if (userRole && !allowedRoles.includes(userRole)) {
-      const redirect = ROLE_DASHBOARD_MAP[userRole] || '/login';
+      const redirect =
+        ROLE_DASHBOARD_MAP[userRole] || '/login';
+
       return <Navigate to={redirect} replace />;
     }
   }
@@ -104,17 +152,28 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   return children;
 };
 
-const GuestRoute = ({ children }) => {
-  const { isAuthenticated, user, isLoading } = useAppSelector((s) => s.auth);
+// ============================================================
+// GUEST ROUTE
+// ============================================================
 
+const GuestRoute = ({ children }) => {
+  const { isAuthenticated, user, isLoading } = useAppSelector(
+    (state) => state.auth
+  );
+
+  // Authentication status is still being checked
   if (isLoading) {
     return (
       <div className="flex-center min-h-[100vh]">
-        <LoadingSpinner size="lg" text="Loading..." />
+        <LoadingSpinner
+          size="lg"
+          text="Loading..."
+        />
       </div>
     );
   }
 
+  // Already logged in
   if (isAuthenticated && user?.role) {
     const redirect =
       ROLE_DASHBOARD_MAP[user.role.toUpperCase()] || '/';
@@ -125,17 +184,33 @@ const GuestRoute = ({ children }) => {
   return children;
 };
 
+// ============================================================
+// REDIRECT BY ROLE
+// ============================================================
+
 const redirectByRole = () => {
   const role = localStorage.getItem('auth_role');
 
-  return ROLE_DASHBOARD_MAP[role?.toUpperCase()] || '/login';
+  return (
+    ROLE_DASHBOARD_MAP[role?.toUpperCase()] ||
+    '/login'
+  );
 };
 
+// ============================================================
+// ROUTER
+// ============================================================
+
 const router = createBrowserRouter([
+  // ==========================================================
+  // PUBLIC WEBSITE
+  // ==========================================================
+
   {
     path: '/',
     element: <Layout />,
     errorElement: <NotFound />,
+
     children: [
       {
         index: true,
@@ -145,6 +220,7 @@ const router = createBrowserRouter([
           </RouteWrapper>
         ),
       },
+
       {
         path: 'doctors',
         element: (
@@ -153,6 +229,7 @@ const router = createBrowserRouter([
           </RouteWrapper>
         ),
       },
+
       {
         path: 'doctors/:id',
         element: (
@@ -161,6 +238,7 @@ const router = createBrowserRouter([
           </RouteWrapper>
         ),
       },
+
       {
         path: 'services',
         element: (
@@ -169,6 +247,7 @@ const router = createBrowserRouter([
           </RouteWrapper>
         ),
       },
+
       {
         path: 'services/:serviceId',
         element: (
@@ -177,6 +256,7 @@ const router = createBrowserRouter([
           </RouteWrapper>
         ),
       },
+
       {
         path: 'about',
         element: (
@@ -185,6 +265,7 @@ const router = createBrowserRouter([
           </RouteWrapper>
         ),
       },
+
       {
         path: 'contact',
         element: (
@@ -193,6 +274,7 @@ const router = createBrowserRouter([
           </RouteWrapper>
         ),
       },
+
       {
         path: 'book',
         element: (
@@ -201,42 +283,60 @@ const router = createBrowserRouter([
           </RouteWrapper>
         ),
       },
+
       {
         path: 'home',
         element: <Navigate to="/" replace />,
       },
+
       {
         path: 'dashboard',
-        element: <Navigate to={redirectByRole()} replace />,
+        element: (
+          <Navigate
+            to={redirectByRole()}
+            replace
+          />
+        ),
       },
     ],
   },
 
+  // ==========================================================
+  // ADMIN DASHBOARD
+  // ==========================================================
+
   {
     path: '/admin',
+
     element: (
       <ProtectedRoute requiredRole="ADMIN">
         <AdminLayout />
       </ProtectedRoute>
     ),
+
     errorElement: <NotFound />,
+
     children: [
       {
         index: true,
         element: <AdminOverview />,
       },
+
       {
         path: 'doctors',
         element: <AdminDoctors />,
       },
+
       {
         path: 'staff',
         element: <AdminStaff />,
       },
+
       {
         path: 'reports',
         element: <AdminReports />,
       },
+
       {
         path: 'settings',
         element: <AdminSettings />,
@@ -244,35 +344,47 @@ const router = createBrowserRouter([
     ],
   },
 
+  // ==========================================================
+  // STAFF DASHBOARD
+  // ==========================================================
+
   {
     path: '/staff',
+
     element: (
       <ProtectedRoute requiredRole="STAFF">
         <StaffLayout />
       </ProtectedRoute>
     ),
+
     errorElement: <NotFound />,
+
     children: [
       {
         index: true,
         element: <StaffOverview />,
       },
+
       {
         path: 'appointments',
         element: <StaffAppointment />,
       },
+
       {
         path: 'patients',
         element: <StaffPatients />,
       },
+
       {
         path: 'queue',
         element: <StaffQueue />,
       },
+
       {
         path: 'billing',
         element: <StaffBilling />,
       },
+
       {
         path: 'settings',
         element: <StaffSetting />,
@@ -280,31 +392,42 @@ const router = createBrowserRouter([
     ],
   },
 
+  // ==========================================================
+  // DOCTOR DASHBOARD
+  // ==========================================================
+
   {
     path: '/doctor',
+
     element: (
       <ProtectedRoute requiredRole="DOCTOR">
         <DoctorLayout />
       </ProtectedRoute>
     ),
+
     errorElement: <NotFound />,
+
     children: [
       {
         index: true,
         element: <DoctorOverview />,
       },
+
       {
         path: 'appointments',
         element: <DoctorAppointments />,
       },
+
       {
         path: 'patients',
         element: <DoctorPatients />,
       },
+
       {
         path: 'records',
         element: <DoctorRecords />,
       },
+
       {
         path: 'settings',
         element: <DoctorSettings />,
@@ -312,19 +435,27 @@ const router = createBrowserRouter([
     ],
   },
 
+  // ==========================================================
+  // PATIENT DASHBOARD
+  // ==========================================================
+
   {
     path: '/patient',
+
     element: (
       <ProtectedRoute requiredRole="PATIENT">
         <PatientLayout />
       </ProtectedRoute>
     ),
+
     errorElement: <NotFound />,
+
     children: [
       {
         index: true,
         element: <PatientAppointments />,
       },
+
       {
         path: 'history',
         element: <PatientHistory />,
@@ -332,13 +463,19 @@ const router = createBrowserRouter([
     ],
   },
 
+  // ==========================================================
+  // LOGIN
+  // ==========================================================
+
   {
     path: '/login',
+
     element: (
       <GuestRoute>
         <AuthLayout />
       </GuestRoute>
     ),
+
     children: [
       {
         index: true,
@@ -351,13 +488,19 @@ const router = createBrowserRouter([
     ],
   },
 
+  // ==========================================================
+  // REGISTER
+  // ==========================================================
+
   {
     path: '/register',
+
     element: (
       <GuestRoute>
         <AuthLayout />
       </GuestRoute>
     ),
+
     children: [
       {
         index: true,
@@ -370,13 +513,19 @@ const router = createBrowserRouter([
     ],
   },
 
+  // ==========================================================
+  // FORGOT PASSWORD
+  // ==========================================================
+
   {
     path: '/forgot-password',
+
     element: (
       <GuestRoute>
         <AuthLayout />
       </GuestRoute>
     ),
+
     children: [
       {
         index: true,
@@ -389,13 +538,19 @@ const router = createBrowserRouter([
     ],
   },
 
+  // ==========================================================
+  // RESET PASSWORD
+  // ==========================================================
+
   {
     path: '/reset-password',
+
     element: (
       <GuestRoute>
         <AuthLayout />
       </GuestRoute>
     ),
+
     children: [
       {
         index: true,
@@ -408,12 +563,24 @@ const router = createBrowserRouter([
     ],
   },
 
+  // ==========================================================
+  // 404
+  // ==========================================================
+
   {
     path: '*',
     element: <NotFound />,
   },
 ]);
 
-const AppRouter = () => <RouterProvider router={router} />;
+// ============================================================
+// APP ROUTER
+// ============================================================
+
+const AppRouter = () => (
+  <RouterProvider router={router} />
+);
 
 export default AppRouter;
+
+

@@ -15,8 +15,7 @@ import {
 } from 'lucide-react';
 import SectionCard from '../../../components/sections/SectionCard';
 import StatCard from '../../../components/sections/StatCard';
-import { fetchPatientById, fetchPatients } from '../../../Redux/slices/patientSlice.js';
-
+import { fetchPatientById, fetchPatients } from "../../../Redux/slices/patientsSlice.js";
 const patientKpis = [
   { label: 'Total Patients', value: 248, sub: 'Under active care', tone: 'primary' },
   { label: 'New This Month', value: 19, sub: '8 first-time consults', tone: 'sky' },

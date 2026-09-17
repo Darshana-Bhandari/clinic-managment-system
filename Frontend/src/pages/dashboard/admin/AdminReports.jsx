@@ -4,7 +4,7 @@ import SectionCard from '../../../components/sections/SectionCard';
 import AreaChart from '../../../components/sections/AreaChart';
 import DonutChart from '../../../components/sections/DonutChart';
 import BarList from '../../../components/sections/BarList';
-import StatCard from '../../../components/sections/StatCar';
+import StatCard from '../../../components/sections/StatCard';
 import { revenueTrend, bookingSource, paymentMix, doctorLoad, currency } from '../../../utils/dashboardData';
 
 const Reports = () => {

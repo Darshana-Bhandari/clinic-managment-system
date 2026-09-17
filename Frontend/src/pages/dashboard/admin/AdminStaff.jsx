@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import SectionCard from '../../../components/sections/SectionCard';
-import { createStaff, listStaff, toggleStaffStatus } from '../../../services/adminServices';
+import { createStaff, listStaff, toggleStaffStatus } from "../../../services/adminService.js";
 
 const initialForm = {
   fullName: '',
