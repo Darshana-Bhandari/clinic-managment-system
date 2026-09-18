@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home as HomeIcon,
   Stethoscope,
+  Building2,
   HeartPulse,
   Info,
   Phone,
@@ -14,7 +15,6 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
-  UserPlus,
   ArrowRight,
   Plus,
   CalendarPlus,
@@ -27,6 +27,7 @@ import Button from '../ui/Button';
 const navLinks = [
   { path: '/', label: 'Home', icon: HomeIcon },
   { path: '/doctors', label: 'Doctors', icon: Stethoscope },
+  { path: '/departments', label: 'Departments', icon: Building2 },
   { path: '/services', label: 'Services', icon: HeartPulse },
   { path: '/about', label: 'About', icon: Info },
   { path: '/contact', label: 'Contact', icon: Phone },
@@ -50,7 +51,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { theme, toggleTheme } = useTheme();
-  const { isAuthenticated, user } = useAppSelector((s) => s.auth);
+  const { isAuthenticated } = useAppSelector((s) => s.auth);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isServicesDropdownOpen, setIsServicesDropdownOpen] = useState(false);
@@ -77,12 +78,6 @@ const Navbar = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isServicesDropdownOpen]);
-
-  // Close mobile menu on route change
-  useEffect(() => {
-    setIsMenuOpen(false);
-    setIsServicesDropdownOpen(false);
-  }, [location.pathname]);
 
   const isActive = (path) => location.pathname === path;
 
