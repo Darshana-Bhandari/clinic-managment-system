@@ -1,20 +1,45 @@
 import { z } from 'zod';
 
+const parseMultipartJson = (value) => {
+  if (typeof value !== 'string') return value;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+};
+
+const optionalNumber = z.preprocess(
+  (value) => (value === '' ? undefined : typeof value === 'string' ? Number(value) : value),
+  z.number().positive().optional()
+);
+
+const optionalInteger = z.preprocess(
+  (value) => (value === '' ? undefined : typeof value === 'string' ? Number(value) : value),
+  z.number().int().positive().optional()
+);
+
+const optionalStringArray = z.preprocess(parseMultipartJson, z.array(z.string()).optional());
+const optionalAvailability = z.preprocess(
+  parseMultipartJson,
+  z.array(z.object({
+    day: z.string(),
+    startTime: z.string(),
+    endTime: z.string(),
+  })).optional()
+);
+
 // Create Doctor Schema
 export const createDoctorSchema = z.object({
   userId: z.string().min(1, 'User ID is required'),
   specialization: z.string().optional(),
   licenseNumber: z.string().optional(),
-  qualifications: z.array(z.string()).optional(),
-  experience: z.number().int().positive().optional(),
+  qualifications: optionalStringArray,
+  experience: optionalInteger,
   hospital: z.string().optional(),
   department: z.string().optional(),
-  consultationFee: z.number().positive().optional(),
-  availableDays: z.array(z.object({
-    day: z.string(),
-    startTime: z.string(),
-    endTime: z.string(),
-  })).optional(),
+  consultationFee: optionalNumber,
+  availableDays: optionalAvailability,
   bio: z.string().max(500, 'Bio cannot exceed 500 characters').optional(),
 });
 
@@ -22,17 +47,14 @@ export const createDoctorSchema = z.object({
 export const updateDoctorSchema = z.object({
   specialization: z.string().optional(),
   licenseNumber: z.string().optional(),
-  qualifications: z.array(z.string()).optional(),
-  experience: z.number().int().positive().optional(),
+  qualifications: optionalStringArray,
+  experience: optionalInteger,
   hospital: z.string().optional(),
   department: z.string().optional(),
-  consultationFee: z.number().positive().optional(),
-  availableDays: z.array(z.object({
-    day: z.string(),
-    startTime: z.string(),
-    endTime: z.string(),
-  })).optional(),
+  consultationFee: optionalNumber,
+  availableDays: optionalAvailability,
   bio: z.string().max(500, 'Bio cannot exceed 500 characters').optional(),
+  removeDocuments: z.preprocess(parseMultipartJson, z.array(z.string()).optional()),
 }).partial();
 
 // Get Doctors Query Schema
@@ -54,27 +76,3 @@ export const rateDoctorSchema = z.object({
   rating: z.number().min(1).max(5, 'Rating must be between 1 and 5'),
   review: z.string().max(500, 'Review cannot exceed 500 characters').optional(),
 });
-
-// Validation middleware
-export const validate = (schema) => {
-  return async (req, res, next) => {
-    try {
-      const validatedData = await schema.parseAsync(req.body);
-      req.body = validatedData;
-      next();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const errors = error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message,
-        }));
-        return res.status(422).json({
-          success: false,
-          message: 'Validation failed',
-          errors,
-        });
-      }
-      next(error);
-    }
-  };
-};

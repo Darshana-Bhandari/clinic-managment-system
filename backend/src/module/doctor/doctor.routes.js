@@ -39,12 +39,12 @@ router.get(
 );
 
 // Get current user's doctor profile
-router.get('/me', doctorController.getDoctorByUserId);
+router.get('/me', authorize(ROLES.DOCTOR), doctorController.getDoctorByUserId);
 
 // Get doctor by ID
 router.get(
   '/:id',
-  authorize(ROLES.ADMIN, ROLES.PATIENT, ROLES.RECEPTIONIST),
+  authorize(ROLES.ADMIN, ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.DOCTOR),
   doctorController.getDoctorById
 );
 
@@ -74,7 +74,7 @@ router.get(
 // Get doctor availability
 router.get(
   '/:id/availability',
-  authorize(ROLES.ADMIN, ROLES.PATIENT, ROLES.RECEPTIONIST),
+  authorize(ROLES.ADMIN, ROLES.PATIENT, ROLES.RECEPTIONIST, ROLES.DOCTOR),
   doctorController.getDoctorAvailability
 );
 
