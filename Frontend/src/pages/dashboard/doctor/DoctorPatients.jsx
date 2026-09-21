@@ -15,13 +15,7 @@ import {
 } from 'lucide-react';
 import SectionCard from '../../../components/sections/SectionCard';
 import StatCard from '../../../components/sections/StatCard';
-import { fetchPatientById, fetchPatients } from "../../../Redux/slices/patientsSlice.js";
-const patientKpis = [
-  { label: 'Total Patients', value: 248, sub: 'Under active care', tone: 'primary' },
-  { label: 'New This Month', value: 19, sub: '8 first-time consults', tone: 'sky' },
-  { label: 'Follow-ups Due', value: 14, sub: 'Next 7 days', tone: 'amber' },
-  { label: 'Chronic Cases', value: 63, sub: 'Long-term management', tone: 'rose' },
-];
+import { fetchPatientById, fetchPatients } from '../../../Redux/slices/patientSlice.js';
 
 const toPatientRow = (patient) => ({
   ...patient,
@@ -32,6 +26,7 @@ const toPatientRow = (patient) => ({
   email: patient.user?.email || 'No email',
   blood: patient.bloodGroup || 'Not recorded',
   visits: patient.appointments?.length || 0,
+  lastVisitDate: patient.appointments?.[0]?.date ? new Date(patient.appointments[0].date) : null,
   lastVisit: patient.appointments?.[0]?.date ? new Date(patient.appointments[0].date).toLocaleDateString() : 'No visits',
   nextVisit: 'Not scheduled',
   status: patient.appointments?.length ? 'Active' : 'New',
@@ -62,6 +57,27 @@ const DoctorPatients = () => {
   const patientsList = useMemo(() => patients.map(toPatientRow), [patients]);
   const selectedDetail = selectedPatient?.id === selected?.id ? toPatientRow(selectedPatient) : selected;
 
+  useEffect(() => {
+    if (!selected && patientsList.length > 0) {
+      setSelected(patientsList[0]);
+      dispatch(fetchPatientById(patientsList[0].id));
+    }
+  }, [dispatch, patientsList, selected]);
+
+  const patientKpis = useMemo(() => {
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    const newThisMonth = patients.filter((patient) => new Date(patient.createdAt) >= monthStart).length;
+    const activePatients = patientsList.filter((patient) => patient.status === 'Active').length;
+    const followUps = patientsList.filter((patient) => patient.nextVisit !== 'Not scheduled').length;
+    return [
+      { label: 'Total Patients', value: patients.length, sub: 'Loaded patient records', tone: 'primary' },
+      { label: 'New This Month', value: newThisMonth, sub: 'Recently registered', tone: 'sky' },
+      { label: 'Follow-ups Due', value: followUps, sub: 'Scheduled next visits', tone: 'amber' },
+      { label: 'Active Care', value: activePatients, sub: 'Patients with visits', tone: 'rose' },
+    ];
+  }, [patients, patientsList]);
+
   const toggleSort = (field) => {
     setSort((s) => ({ field, dir: s.field === field && s.dir === 'asc' ? 'desc' : 'asc' }));
   };
@@ -78,7 +94,7 @@ const DoctorPatients = () => {
       if (sort.field === 'visits') return (a.visits - b.visits) * order;
       if (sort.field === 'age') return (a.age - b.age) * order;
       if (sort.field === 'name') return a.name.localeCompare(b.name) * order;
-      return 0;
+      return ((a.lastVisitDate?.getTime() || 0) - (b.lastVisitDate?.getTime() || 0)) * order;
     });
 
   return (
@@ -247,9 +263,9 @@ const DoctorPatients = () => {
                 <button className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900">
                   <MessageSquare className="h-3.5 w-3.5" /> Message
                 </button>
-                <button className="ml-auto flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white dark:border-slate-700 dark:text-slate-400">
+                <Link to="/doctor/appointments" className="ml-auto flex items-center gap-1.5 rounded-lg border border-dashed border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-white dark:border-slate-700 dark:text-slate-400">
                   <Eye className="h-3.5 w-3.5" /> Full history
-                </button>
+                </Link>
               </div>
             </div>
           )}

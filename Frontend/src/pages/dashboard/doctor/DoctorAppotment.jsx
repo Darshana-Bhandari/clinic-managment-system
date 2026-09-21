@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Search,
   Filter,
@@ -15,8 +15,10 @@ import {
 } from 'lucide-react';
 import SectionCard from '../../../components/sections/SectionCard';
 import StatusPill from '../../../components/sections/StatusPill';
+import { cancelAppointment, getAppointments, updateAppointment } from '../../../services/appointmentService.js';
+import toast from 'react-hot-toast';
 
-const appointmentsData = [
+const fallbackAppointments = [
   { id: 'A-1042', date: 'Today', time: '10:00 AM', token: 'C-07', patient: 'Anita Shrestha', age: 34, gender: 'Female', type: 'Follow-up', notes: 'Hypertension review, BP 142/90 last visit', status: 'In progress', fee: 1500, paid: true, phone: '+977 98•••231' },
   { id: 'A-1043', date: 'Today', time: '10:30 AM', token: 'C-08', patient: 'Prakash Rai', age: 41, gender: 'Male', type: 'New consult', notes: 'Chest pain x 3 days, on exertion', status: 'Checked-in', fee: 1500, paid: false, phone: '+977 98•••114' },
   { id: 'A-1044', date: 'Today', time: '11:00 AM', token: 'C-09', patient: 'Bina Tamang', age: 28, gender: 'Female', type: 'Check-up', notes: 'Annual cardiac health review', status: 'Booked', fee: 1500, paid: true, phone: '+977 98•••702' },
@@ -36,11 +38,68 @@ const tabs = ['All', 'Today', 'Tomorrow', 'Upcoming', 'Completed', 'Cancelled'];
 const filters = ['All types', 'New consult', 'Follow-up', 'Report review', 'Check-up', 'Referral'];
 
 const DoctorAppointments = () => {
+  const [appointmentsData, setAppointmentsData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('All');
   const [typeFilter, setTypeFilter] = useState('All types');
   const [search, setSearch] = useState('');
   const [rescheduleOpen, setRescheduleOpen] = useState(null);
   const [rescheduleTime, setRescheduleTime] = useState({ date: '', time: '' });
+
+  useEffect(() => {
+    const loadAppointments = async () => {
+      try {
+        const result = await getAppointments({ limit: 100 });
+        const rows = (result.appointments || result || []).map((appointment) => ({
+          ...appointment,
+          patient: appointment.patient?.user?.fullName || 'Unknown patient',
+          phone: appointment.patient?.user?.phone || '—',
+          date: new Date(appointment.date).toLocaleDateString() === new Date().toLocaleDateString()
+            ? 'Today'
+            : new Date(appointment.date).toLocaleDateString(),
+          status: appointment.status?.replace('_', ' ') || 'Booked',
+          type: appointment.type || 'Consultation',
+          notes: appointment.notes || appointment.symptoms?.join(', ') || '-',
+          fee: appointment.fee || 0,
+          paid: appointment.paid ?? false,
+        }));
+        setAppointmentsData(rows);
+      } catch (error) {
+        setAppointmentsData(fallbackAppointments);
+        toast.error(error.response?.data?.message || 'Could not load appointments');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAppointments();
+  }, []);
+
+  const handleCancel = async (appointment) => {
+    try {
+      const reason = window.prompt('Cancellation reason');
+      if (!reason) return;
+      const updated = await cancelAppointment(appointment.id, reason);
+      setAppointmentsData((current) => current.map((item) => item.id === appointment.id ? { ...item, ...updated, status: 'CANCELLED' } : item));
+      toast.success('Appointment cancelled');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Could not cancel appointment');
+    }
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleOpen || !rescheduleTime.date || !rescheduleTime.time) return;
+    try {
+      const updated = await updateAppointment(rescheduleOpen, {
+        date: new Date(`${rescheduleTime.date}T00:00:00`).toISOString(),
+        time: rescheduleTime.time,
+      });
+      setAppointmentsData((current) => current.map((item) => item.id === rescheduleOpen ? { ...item, ...updated, date: rescheduleTime.date, time: rescheduleTime.time } : item));
+      setRescheduleOpen(null);
+      toast.success('Appointment rescheduled');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Could not reschedule appointment');
+    }
+  };
 
   const filtered = appointmentsData.filter((a) => {
     if (activeTab === 'Today' && a.date !== 'Today') return false;
@@ -130,7 +189,7 @@ const DoctorAppointments = () => {
       </div>
 
       {/* Appointments list */}
-      <SectionCard title={`Appointments (${filtered.length})`} subtitle="Click on a row to see full details" bodyClassName="p-0">
+      <SectionCard title={`Appointments (${filtered.length})`} subtitle={loading ? 'Loading appointments...' : 'Click on a row to see full details'} bodyClassName="p-0">
         {filtered.length === 0 ? (
           <div className="p-12 text-center text-sm text-slate-400">
             <CalendarDays className="mx-auto h-10 w-10 mb-3 text-slate-300 dark:text-slate-700" />
@@ -202,7 +261,7 @@ const DoctorAppointments = () => {
                           <button className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-900/20">
                             <CheckCircle2 className="h-3.5 w-3.5" /> Mark complete
                           </button>
-                          <button className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-900/20">
+                          <button onClick={() => handleCancel(apt)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-900/20">
                             <XCircle className="h-3.5 w-3.5" /> Cancel
                           </button>
                         </div>
@@ -241,7 +300,7 @@ const DoctorAppointments = () => {
               </div>
               <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
                 <button onClick={() => setRescheduleOpen(null)} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300">Cancel</button>
-                <button onClick={() => setRescheduleOpen(null)} className="rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white">Reschedule</button>
+                <button onClick={handleReschedule} className="rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white">Reschedule</button>
               </div>
             </div>
           </div>

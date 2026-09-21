@@ -46,6 +46,10 @@ const clearAuthStorage = () => {
 
 axiosInstance.interceptors.request.use(
   (config) => {
+    if (config.skipAuth) {
+      delete config.headers.Authorization;
+      return config;
+    }
     const token = getStoredAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -64,7 +68,7 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(new Error('Network error. Please check your connection.'));
     }
 
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (error.response.status === 401 && !originalRequest.skipAuth && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -93,7 +97,7 @@ axiosInstance.interceptors.response.use(
       try {
         const response = await axiosInstance.post('/auth/refresh-token', {
           refreshToken,
-        });
+        }, { skipAuth: true });
 
         const { accessToken, refreshToken: newRefreshToken } = response.data?.data || {};
 

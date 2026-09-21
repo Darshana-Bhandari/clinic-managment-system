@@ -8,6 +8,9 @@ import Input from '../components/ui/Input.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 
 const redirectByRole = (role) => {
+  if (role?.toUpperCase() === 'DOCTOR' && localStorage.getItem('doctor_onboarding_pending') === 'true') {
+    return '/doctor/onboarding';
+  }
   const map = {
     ADMIN: '/admin',
     DOCTOR: '/doctor',

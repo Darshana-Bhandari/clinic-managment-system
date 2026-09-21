@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FileText,
@@ -15,9 +15,22 @@ import {
   Download,
   X,
   CheckCircle2,
+  Trash2,
 } from 'lucide-react';
 import SectionCard from '../../../components/sections/SectionCard';
 import StatCard from '../../../components/sections/StatCard';
+import { createMedicalRecord, deleteMedicalRecord, getAllMedicalRecords } from '../../../services/medicalRecordService.js';
+import toast from 'react-hot-toast';
+
+const recordTypes = [
+  { label: 'All types', value: 'All', Icon: FileText },
+  { label: 'Consultations', value: 'Consultation', Icon: Stethoscope },
+  { label: 'Prescriptions', value: 'Rx', Icon: Pill },
+  { label: 'Lab / Imaging', value: 'Report', Icon: ScanSearch },
+];
+
+const samplePrescriptions = [];
+const sampleReports = [];
 
 const recordKpis = [
   { label: 'Total records', value: 482, sub: 'All consultations', tone: 'primary' },
@@ -26,48 +39,157 @@ const recordKpis = [
   { label: 'This month', value: 56, sub: 'New medical entries', tone: 'sky' },
 ];
 
-const records = [
-  { id: 'MR-3021', patientId: 'P-2041', patient: 'Anita Shrestha', date: 'Today', type: 'Consultation', diagnosis: 'Essential hypertension - BP uncontrolled', doctor: 'Dr. Ram Sharma', prescriptions: 2, reports: 1, status: 'In progress' },
-  { id: 'MR-3020', patientId: 'P-2041', patient: 'Anita Shrestha', date: '2 weeks ago', type: 'Follow-up', diagnosis: 'BP improved (132/84), continue meds', doctor: 'Dr. Ram Sharma', prescriptions: 2, reports: 0, status: 'Closed' },
-  { id: 'MR-3019', patientId: 'P-2044', patient: 'Suresh Magar', date: 'Today', type: 'Report review', diagnosis: 'ECG: NSR, no ischemic changes', doctor: 'Dr. Ram Sharma', prescriptions: 0, reports: 3, status: 'Closed' },
-  { id: 'MR-3018', patientId: 'P-2048', patient: 'Kamal Bhandari', date: '5 days ago', type: 'Procedure note', diagnosis: 'Coronary angiography - LAD 80% lesion, stent placed', doctor: 'Dr. Ram Sharma', prescriptions: 5, reports: 4, status: 'Closed' },
-  { id: 'MR-3017', patientId: 'P-2043', patient: 'Bina Tamang', date: 'Yesterday', type: 'Consultation', diagnosis: 'MVP with mild MR, reassurance', doctor: 'Dr. Ram Sharma', prescriptions: 1, reports: 1, status: 'Closed' },
-  { id: 'MR-3016', patientId: 'P-2047', patient: 'Sarita Gurung', date: '1 week ago', type: 'Follow-up', diagnosis: 'Peripartum CMP resolved, EF 58%', doctor: 'Dr. Ram Sharma', prescriptions: 0, reports: 2, status: 'Closed' },
-  { id: 'MR-3015', patientId: 'P-2049', patient: 'Hari Sharma', date: 'Yesterday', type: 'Medication change', diagnosis: 'Switched Lisinopril → Telmisartan due to cough', doctor: 'Dr. Ram Sharma', prescriptions: 2, reports: 0, status: 'Closed' },
-];
+// const records = [
+//   { id: 'MR-3021', patientId: 'P-2041', patient: 'Anita Shrestha', date: 'Today', type: 'Consultation', diagnosis: 'Essential hypertension - BP uncontrolled', doctor: 'Dr. Ram Sharma', prescriptions: 2, reports: 1, status: 'In progress' },
+//   { id: 'MR-3020', patientId: 'P-2041', patient: 'Anita Shrestha', date: '2 weeks ago', type: 'Follow-up', diagnosis: 'BP improved (132/84), continue meds', doctor: 'Dr. Ram Sharma', prescriptions: 2, reports: 0, status: 'Closed' },
+//   { id: 'MR-3019', patientId: 'P-2044', patient: 'Suresh Magar', date: 'Today', type: 'Report review', diagnosis: 'ECG: NSR, no ischemic changes', doctor: 'Dr. Ram Sharma', prescriptions: 0, reports: 3, status: 'Closed' },
+//   { id: 'MR-3018', patientId: 'P-2048', patient: 'Kamal Bhandari', date: '5 days ago', type: 'Procedure note', diagnosis: 'Coronary angiography - LAD 80% lesion, stent placed', doctor: 'Dr. Ram Sharma', prescriptions: 5, reports: 4, status: 'Closed' },
+//   { id: 'MR-3017', patientId: 'P-2043', patient: 'Bina Tamang', date: 'Yesterday', type: 'Consultation', diagnosis: 'MVP with mild MR, reassurance', doctor: 'Dr. Ram Sharma', prescriptions: 1, reports: 1, status: 'Closed' },
+//   { id: 'MR-3016', patientId: 'P-2047', patient: 'Sarita Gurung', date: '1 week ago', type: 'Follow-up', diagnosis: 'Peripartum CMP resolved, EF 58%', doctor: 'Dr. Ram Sharma', prescriptions: 0, reports: 2, status: 'Closed' },
+//   { id: 'MR-3015', patientId: 'P-2049', patient: 'Hari Sharma', date: 'Yesterday', type: 'Medication change', diagnosis: 'Switched Lisinopril → Telmisartan due to cough', doctor: 'Dr. Ram Sharma', prescriptions: 2, reports: 0, status: 'Closed' },
+// ];
 
-const recordTypes = [
-  { label: 'All types', value: 'All', Icon: FileText, tone: 'bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-  { label: 'Consultations', value: 'Consultation', Icon: Stethoscope, tone: 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' },
-  { label: 'Prescriptions', value: 'Rx', Icon: Pill, tone: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
-  { label: 'Lab / Imaging', value: 'Report', Icon: ScanSearch, tone: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
-];
+// const recordTypes = [
+//   { label: 'All types', value: 'All', Icon: FileText, tone: 'bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
+//   { label: 'Consultations', value: 'Consultation', Icon: Stethoscope, tone: 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' },
+//   { label: 'Prescriptions', value: 'Rx', Icon: Pill, tone: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
+//   { label: 'Lab / Imaging', value: 'Report', Icon: ScanSearch, tone: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
+// ];
 
-const samplePrescriptions = [
-  { name: 'Telmisartan 40mg', dosage: 'Once daily', frequency: 'After breakfast', duration: '30 days', refillable: 2 },
-  { name: 'Amlodipine 5mg', dosage: '5mg', frequency: 'Once at bedtime', duration: '30 days', refillable: 2 },
-  { name: 'Atorvastatin 20mg', dosage: '20mg', frequency: 'Once at bedtime', duration: '90 days', refillable: 1 },
-];
+// const samplePrescriptions = [
+//   { name: 'Telmisartan 40mg', dosage: 'Once daily', frequency: 'After breakfast', duration: '30 days', refillable: 2 },
+//   { name: 'Amlodipine 5mg', dosage: '5mg', frequency: 'Once at bedtime', duration: '30 days', refillable: 2 },
+//   { name: 'Atorvastatin 20mg', dosage: '20mg', frequency: 'Once at bedtime', duration: '90 days', refillable: 1 },
+// ];
 
-const sampleReports = [
-  { name: 'ECG (Resting)', date: 'Today', status: 'Completed', file: 'ECG_MR3021.pdf' },
-  { name: 'Lipid Profile', date: '2 days ago', status: 'Completed', file: 'LIPID_2044.pdf' },
-  { name: '2D Echo', date: 'Pending', status: 'Pending', file: '—' },
-];
+// const sampleReports = [
+//   { name: 'ECG (Resting)', date: 'Today', status: 'Completed', file: 'ECG_MR3021.pdf' },
+//   { name: 'Lipid Profile', date: '2 days ago', status: 'Completed', file: 'LIPID_2044.pdf' },
+//   { name: '2D Echo', date: 'Pending', status: 'Pending', file: '—' },
+// ];
+
+
 
 const DoctorRecords = () => {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
   const [createOpen, setCreateOpen] = useState(false);
-  const [selected, setSelected] = useState(records[0]);
+  const [selected, setSelected] = useState(null);
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
+  const [filter, setFilter] = useState({ search: '', patientId: '', fromDate: '', toDate: '' });
+  const [recordForm, setRecordForm] = useState({ patientId: '', doctorId: '', symptoms: '', diagnosis: '', notes: '' });
 
-  const filtered = records.filter((r) => {
-    if (typeFilter !== 'All' && !r.type.includes(typeFilter) && !(typeFilter === 'Report' && r.reports > 0) && !(typeFilter === 'Rx' && r.prescriptions > 0)) return false;
+  const filtered = records.filter((record) => {
+    if (typeFilter !== 'All' && typeFilter === 'Rx' && record.prescriptions === 0) return false;
+    if (typeFilter !== 'All' && typeFilter === 'Report' && record.reports === 0) return false;
+    if (typeFilter === 'Consultation' && record.type !== 'Consultation') return false;
     if (!search) return true;
-    const q = search.toLowerCase();
-    return r.patient.toLowerCase().includes(q) || r.diagnosis.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
+    const query = search.toLowerCase();
+    return [record.patient, record.diagnosis, record.id].some((value) => value?.toLowerCase().includes(query));
   });
 
+  // const filtered = records.filter((r) => {
+  //   if (typeFilter !== 'All' && !r.type.includes(typeFilter) && !(typeFilter === 'Report' && r.reports > 0) && !(typeFilter === 'Rx' && r.prescriptions > 0)) return false;
+  //   if (!search) return true;
+  //   const q = search.toLowerCase();
+  //   return r.patient.toLowerCase().includes(q) || r.diagnosis.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
+  // });
+  // fetch 
+  const fetchRecords = async(params={})=>{
+    setLoading(true)
+    setError(null);
+    try{
+      const data = await getAllMedicalRecords({ page: pagination.page, limit: pagination.limit, ...filter, ...params });
+      const nextRecords = (data.records || data || []).map((record) => ({
+        ...record,
+        patient: record.patient?.user?.fullName || 'Unknown patient',
+        patientId: record.patientId,
+        doctor: record.doctor?.user?.fullName || 'Unknown doctor',
+        date: record.diagnosisDate ? new Date(record.diagnosisDate).toLocaleDateString() : 'No date',
+        type: record.type || 'Consultation',
+        diagnosis: record.diagnosis || 'No diagnosis recorded',
+        prescriptions: record.prescriptions?.length || 0,
+        reports: record.reports?.length || 0,
+        prescriptionItems: record.prescriptions || [],
+        reportItems: record.reports || [],
+        status: record.status || 'Closed',
+      }));
+      setRecords(nextRecords);
+      setSelected((current) => nextRecords.find((record) => record.id === current?.id) || nextRecords[0] || null);
+      if (data.pagination) setPagination(data.pagination);
+    }
+    catch (requestError) {
+      const message = requestError.response?.data?.message || 'Failed to load medical records';
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+
+  }
+
+  useEffect(()=>{
+    fetchRecords();
+
+  }, [pagination.page])
+
+
+  //hanlders
+const handleFilterChange = (key, value)=>{
+  setFilter((prev)=>({...prev,[key]:value}))
+}
+
+const handleSearch = (e)=>{
+  e.preventDefault();
+  setPagination((p)=>({...p,page:1}))
+}
+
+const handleReset = () =>{
+  const reset = {search:'',patientId:'', fromDate:'',toDate:''};
+  setFilter(reset)
+  setPagination((p)=>({...p,page:1}))
+  fetchRecords({page:1, ...reset})
+}
+
+
+// handle delete 
+const handleDelete = async (medicalId) =>{
+  if(!window.confirm('Are you sure you want to delete this medical record ?'))
+    return 
+  try{
+    await deleteMedicalRecord(medicalId);
+    toast.success("Medical record deleted successfully")
+    fetchRecords()
+  }
+  catch(error){
+    toast.error(error.response?.data?.message || "Failed to delete record")
+  }
+}
+// page change 
+const handlePageChange = (newPage )=>{
+  setPagination((p)=>({...p,page:newPage}))
+}
+
+  const handleCreateRecord = async () => {
+    try {
+      await createMedicalRecord({
+        patientId: recordForm.patientId,
+        doctorId: recordForm.doctorId,
+        symptoms: recordForm.symptoms.split(',').map((item) => item.trim()).filter(Boolean),
+        diagnosis: recordForm.diagnosis,
+        notes: recordForm.notes,
+      });
+      setCreateOpen(false);
+      setRecordForm({ patientId: '', doctorId: '', symptoms: '', diagnosis: '', notes: '' });
+      await fetchRecords({ page: 1 });
+      toast.success('Medical record created');
+    } catch (requestError) {
+      toast.error(requestError.response?.data?.message || 'Could not create medical record');
+    }
+  };
   return (
     <div className="space-y-6">
       {/* KPI strip */}
@@ -109,11 +231,16 @@ const DoctorRecords = () => {
             <Plus className="h-4 w-4" /> New record
           </button>
         </div>
+        //errors 
+        {error && (
+          <div className='bg-red-100 ' > {error} </div>
+
+        )  }
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Records list */}
-        <SectionCard className="lg:col-span-2" title={`Medical records (${filtered.length})`} subtitle="Click to view full record" bodyClassName="p-0">
+        <SectionCard className="lg:col-span-2" title={`Medical records (${filtered.length})`} subtitle={loading ? 'Loading records...' : 'Click to view full record'} bodyClassName="p-0">
           {filtered.length === 0 ? (
             <div className="p-10 text-center text-sm text-slate-400">
               <FileText className="mx-auto h-10 w-10 mb-2 text-slate-300 dark:text-slate-700" />
@@ -205,23 +332,23 @@ const DoctorRecords = () => {
               <div className="p-5">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-                    <Pill className="h-3.5 w-3.5" /> Prescriptions ({samplePrescriptions.length})
+                    <Pill className="h-3.5 w-3.5" /> Prescriptions ({(selected.prescriptionItems || samplePrescriptions).length})
                   </p>
                   <button className="text-[11px] font-bold text-primary-700 hover:underline dark:text-primary-300 flex items-center gap-1">
                     Print <Download className="h-3 w-3" />
                   </button>
                 </div>
                 <div className="mt-3 space-y-2">
-                  {samplePrescriptions.map((rx, idx) => (
+                  {(selected.prescriptionItems?.length ? selected.prescriptionItems : samplePrescriptions).map((rx, idx) => (
                     <div key={idx} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">{rx.name}</p>
+                          <p className="text-sm font-semibold text-slate-900 dark:text-white">{rx.medication || rx.name}</p>
                           <p className="text-xs text-slate-500">{rx.dosage} · {rx.frequency} · {rx.duration}</p>
                         </div>
                         {rx.refillable > 0 && (
                           <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                            {rx.refillable} refill
+                            {rx.refills ?? rx.refillable} refill
                           </span>
                         )}
                       </div>
@@ -233,10 +360,10 @@ const DoctorRecords = () => {
               {/* Reports */}
               <div className="p-5">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-                  <ScanSearch className="h-3.5 w-3.5" /> Reports &amp; investigations ({sampleReports.length})
+                  <ScanSearch className="h-3.5 w-3.5" /> Reports &amp; investigations ({(selected.reportItems || sampleReports).length})
                 </p>
                 <div className="mt-3 space-y-2">
-                  {sampleReports.map((r, idx) => (
+                  {(selected.reportItems?.length ? selected.reportItems : sampleReports).map((r, idx) => (
                     <div key={idx} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
                       <div>
                         <p className="text-sm font-semibold text-slate-900 dark:text-white">{r.name}</p>
@@ -266,6 +393,9 @@ const DoctorRecords = () => {
                 <button className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-white dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900">
                   <ScanSearch className="h-3.5 w-3.5" /> Order test
                 </button>
+                <button onClick={() => handleDelete(selected.id)} className="flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-50 dark:border-rose-900/50 dark:text-rose-300 dark:hover:bg-rose-900/20">
+                  <Trash2 className="h-3.5 w-3.5" /> Delete record
+                </button>
                 <Link to="/doctor/patients" className="ml-auto text-xs font-bold text-primary-700 hover:underline dark:text-primary-300 flex items-center gap-1">
                   Full patient chart <ChevronRight className="h-3.5 w-3.5" />
                 </Link>
@@ -291,12 +421,11 @@ const DoctorRecords = () => {
             <div className="mt-4 space-y-3 text-sm">
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Patient</label>
-                <select className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white">
-                  <option>Anita Shrestha (P-2041)</option>
-                  <option>Prakash Rai (P-2042)</option>
-                  <option>Suresh Magar (P-2044)</option>
-                  <option>Kamal Bhandari (P-2048)</option>
-                </select>
+                <input value={recordForm.patientId} onChange={(e) => setRecordForm({ ...recordForm, patientId: e.target.value })} placeholder="Patient ID" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Doctor ID</label>
+                <input value={recordForm.doctorId} onChange={(e) => setRecordForm({ ...recordForm, doctorId: e.target.value })} placeholder="Doctor ID" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Visit type</label>
@@ -306,20 +435,20 @@ const DoctorRecords = () => {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Chief complaints / Symptoms</label>
-                <textarea rows={2} placeholder="e.g. Chest pain on exertion x 3 days" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
+                <textarea value={recordForm.symptoms} onChange={(e) => setRecordForm({ ...recordForm, symptoms: e.target.value })} rows={2} placeholder="e.g. Chest pain, fatigue (comma-separated)" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Diagnosis</label>
-                <textarea rows={2} placeholder="Working diagnosis, assessment &amp; plan" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
+                <textarea value={recordForm.diagnosis} onChange={(e) => setRecordForm({ ...recordForm, diagnosis: e.target.value })} rows={2} placeholder="Working diagnosis, assessment &amp; plan" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Notes / Clinical observations</label>
-                <textarea rows={3} placeholder="BP, HR, exam findings, discussion points…" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
+                <textarea value={recordForm.notes} onChange={(e) => setRecordForm({ ...recordForm, notes: e.target.value })} rows={3} placeholder="BP, HR, exam findings, discussion points…" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
             </div>
             <div className="mt-5 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
               <button onClick={() => setCreateOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300">Cancel</button>
-              <button onClick={() => setCreateOpen(false)} className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700">
+              <button onClick={handleCreateRecord} disabled={!recordForm.patientId || !recordForm.doctorId || !recordForm.diagnosis} className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50">
                 <CheckCircle2 className="h-4 w-4" /> Save record
               </button>
             </div>

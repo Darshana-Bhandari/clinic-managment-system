@@ -11,19 +11,20 @@ import DoctorLayout from '../components/layout/DoctorLayout';
 
 import Home from '../pages/Home';
 import Doctor from '../pages/Doctor';
-import DoctorDetail from '../pages/DoctorDetail';
+import DoctorDetail from "../pages/DoctorDetails";
 import Departments from '../pages/Departments.jsx';
 import DepartmentDetail from '../pages/DepartmentDetail.jsx';
 import About from '../pages/About';
 import Contact from '../pages/Contact';
 import NotFound from '../pages/Error';
-import Services from '../pages/Services';
-import ServiceDetail from '../pages/ServiceDetail';
+import Services from "../pages/Service";
+import ServiceDetail from "../pages/ServiceDetails";
 import Booking from '../pages/Booking';
 import Login from '../pages/Login.jsx';
 import Register from '../pages/Register.jsx';
 import ForgotPassword from '../pages/ForgotPassword.jsx';
 import ResetPassword from '../pages/ResetPassword.jsx';
+import VerifyEmail from '../pages/VerifyEmail.jsx';
 
 import AdminOverview from '../pages/dashboard/admin/AdminOverview';
 import StaffOverview from '../pages/dashboard/staff/StaffOverview';
@@ -31,6 +32,7 @@ import StaffAppointments from '../pages/dashboard/staff/StaffAppointments';
 import StaffPatients from '../pages/dashboard/staff/StaffPatients';
 import StaffSettings from '../pages/dashboard/staff/StaffSettings';
 import AdminDoctors from '../pages/dashboard/admin/AdminDoctors';
+import AdminDepartments from "../pages/dashboard/admin/AdminDepartments.jsx";
 import AdminStaff from '../pages/dashboard/admin/AdminStaff';
 import StaffQueue from '../pages/dashboard/staff/StaffQueue';
 import StaffBilling from '../pages/dashboard/staff/StaffBilling';
@@ -44,6 +46,7 @@ import DoctorAppointments from '../pages/dashboard/doctor/DoctorAppointments';
 import DoctorPatients from '../pages/dashboard/doctor/DoctorPatients';
 import DoctorRecords from '../pages/dashboard/doctor/DoctorRecords';
 import DoctorSettings from '../pages/dashboard/doctor/DoctorSettings';
+import DoctorOnboarding from '../pages/DoctorOnboarding.jsx';
 
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 
@@ -113,7 +116,8 @@ const GuestRoute = ({ children }) => {
   }
 
   if (isAuthenticated && user?.role) {
-    const redirect = ROLE_DASHBOARD_MAP[user.role.toUpperCase()] || '/';
+    const isNewDoctor = user.role.toUpperCase() === 'DOCTOR' && localStorage.getItem('doctor_onboarding_pending') === 'true';
+    const redirect = isNewDoctor ? '/doctor/onboarding' : ROLE_DASHBOARD_MAP[user.role.toUpperCase()] || '/';
     return <Navigate to={redirect} replace />;
   }
 
@@ -157,6 +161,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <AdminOverview /> },
       { path: 'doctors', element: <AdminDoctors /> },
+      { path: 'departments', element: <AdminDepartments /> },
       { path: 'staff', element: <AdminStaff /> },
       { path: 'reports', element: <AdminReports /> },
       { path: 'settings', element: <AdminSettings /> },
@@ -190,6 +195,7 @@ const router = createBrowserRouter([
     ),
     errorElement: <NotFound />,
     children: [
+      { path: 'onboarding', element: <DoctorOnboarding /> },
       { index: true, element: <DoctorOverview /> },
       { path: 'appointments', element: <DoctorAppointments /> },
       { path: 'patients', element: <DoctorPatients /> },
@@ -263,6 +269,21 @@ const router = createBrowserRouter([
         element: (
           <RouteWrapper>
             <ForgotPassword />
+          </RouteWrapper>
+        ),
+      },
+    ],
+  },
+
+  {
+    path: '/verify-email',
+    element: <AuthLayout />,
+    children: [
+      {
+        index: true,
+        element: (
+          <RouteWrapper>
+            <VerifyEmail />
           </RouteWrapper>
         ),
       },
