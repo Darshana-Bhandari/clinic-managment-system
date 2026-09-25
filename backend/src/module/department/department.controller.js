@@ -4,7 +4,7 @@ import { successResponse, errorResponse, createdResponse, notFoundResponse, conf
 // Create Department
 export const createDepartment = async (req, res) => {
   try {
-    const department = await departmentService.createDepartment(req.body);
+    const department = await departmentService.createDepartment(req.body, req.user.id);
     return createdResponse(res, department, 'Department created successfully');
   } catch (error) {
     if (error.message === 'Department with this name already exists' || error.message === 'Head doctor not found' || error.message === 'This doctor is already head of another department') {

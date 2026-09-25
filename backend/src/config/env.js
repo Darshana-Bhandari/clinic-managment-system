@@ -54,9 +54,9 @@ export const ENV = {
 
   RESEND_OTP_RATE_LIMIT_MAX:
     parseInt(process.env.RESEND_OTP_RATE_LIMIT_MAX) || 3,
-  Cloud_Name: process.env.Cloud_Name,
-  Cloud_API_SECRET: process.env.Cloud_API_SECRET,
-  Cloud_API_KEY: process.env.Cloud_API_KEY,
+  Cloud_Name: process.env.CLOUDINARY_CLOUD_NAME || process.env.Cloud_Name,
+  Cloud_API_SECRET: process.env.CLOUDINARY_API_SECRET || process.env.Cloud_API_SECRET,
+  Cloud_API_KEY: process.env.CLOUDINARY_API_KEY || process.env.Cloud_API_KEY,
 
   // Khalti Payment
   KHALTI_SECRET_KEY: process.env.KHALTI_SECRET_KEY,

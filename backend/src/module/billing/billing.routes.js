@@ -17,46 +17,71 @@ import {
     deleteBill,
     getBillSummary,
 } from './billing.controller.js';
+import {
+    getInvoiceJSON,
+    getInvoiceByInvoiceNumberJSON,
+    getInvoiceHTML,
+    downloadInvoiceHTML,
+    getPaymentReceipt,
+} from './invoice.controller.js';
 
 const router = express.Router();
 
-// All billing routes require a valid JWT
 router.use(verifyToken);
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SUMMARY  — must be before /:id to avoid route clash
-// GET /api/billing/summary?fromDate=&toDate=
-// ─────────────────────────────────────────────────────────────────────────────
-
+// Summary
 router.get(
     '/summary',
     authorize(ROLES.ADMIN, ROLES.RECEPTIONIST),
     getBillSummary
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// INVOICE LOOKUP  — must be before /:id to avoid route clash
-// GET /api/billing/invoice/:invoiceNumber
-// ─────────────────────────────────────────────────────────────────────────────
-
+// Invoice by invoice number
 router.get(
     '/invoice/:invoiceNumber',
     authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT),
     getBillByInvoiceNumber
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BILL COLLECTION
-// ─────────────────────────────────────────────────────────────────────────────
+router.get(
+    '/invoice/:invoiceNumber/json',
+    authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT),
+    getInvoiceByInvoiceNumberJSON
+);
 
-// GET /api/billing
+// Invoice endpoints by bill id
+router.get(
+    '/:id/invoice',
+    authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT),
+    getInvoiceHTML
+);
+
+router.get(
+    '/:id/invoice/json',
+    authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT),
+    getInvoiceJSON
+);
+
+router.get(
+    '/:id/invoice/download',
+    authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT),
+    downloadInvoiceHTML
+);
+
+// Receipt by payment id
+router.get(
+    '/receipt/:paymentId',
+    authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.PATIENT),
+    getPaymentReceipt
+);
+
+// Bill list / create
 router.get(
     '/',
     authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR),
     getAllBills
 );
 
-// POST /api/billing
 router.post(
     '/',
     authorize(ROLES.ADMIN, ROLES.RECEPTIONIST),
@@ -64,18 +89,13 @@ router.post(
     generateBill
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SINGLE BILL
-// ─────────────────────────────────────────────────────────────────────────────
-
-// GET /api/billing/:id
+// Single bill
 router.get(
     '/:id',
     authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.DOCTOR, ROLES.PATIENT),
     getBillById
 );
 
-// PUT /api/billing/:id
 router.put(
     '/:id',
     authorize(ROLES.ADMIN, ROLES.RECEPTIONIST),
@@ -83,18 +103,13 @@ router.put(
     updateBill
 );
 
-// DELETE /api/billing/:id  (Admin only — UNPAID/CANCELLED bills only)
 router.delete(
     '/:id',
     authorize(ROLES.ADMIN),
     deleteBill
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BILL ACTIONS
-// ─────────────────────────────────────────────────────────────────────────────
-
-// PATCH /api/billing/:id/cancel
+// Actions
 router.patch(
     '/:id/cancel',
     authorize(ROLES.ADMIN, ROLES.RECEPTIONIST),

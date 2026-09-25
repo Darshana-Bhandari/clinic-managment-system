@@ -106,9 +106,6 @@ export const sanitize = (req, _res, next) => {
   if (req.params && typeof req.params === 'object') {
     req.params = sanitizeValue(req.params, { allowHtml: false, maxLength: 500 });
   }
-  if (req.query && typeof req.query === 'object') {
-    req.query = sanitizeValue(req.query, { allowHtml: false, maxLength: 2000 });
-  }
   if (req.headers) {
     const sanitizedHeaders = {};
     for (const [key, value] of Object.entries(req.headers)) {

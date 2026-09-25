@@ -10,7 +10,6 @@ const router = express.Router();
 router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.post('/admin/login', authController.adminLogin);
-router.post('/admin/verify-login', authController.verifyAdminLogin);
 
 // Email Verification
 router.post('/verify-email', authController.verifyEmail);
@@ -22,11 +21,11 @@ router.post('/reset-password', authController.resetPassword);
 
 // Token Management
 router.post('/refresh-token', authController.refreshToken);
+router.post('/logout', authController.logout);
 
 // ==================== PROTECTED ROUTES ====================
 router.use(verifyToken);
 
-router.post('/logout', authController.logout);
 router.get('/profile', authController.getProfile);
 
 // Profile update — supports optional avatar upload

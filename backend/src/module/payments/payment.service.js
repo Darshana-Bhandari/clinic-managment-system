@@ -512,6 +512,58 @@ export const getPaymentSummary = async (filters = {}) => {
     return summary;
 };
 
+export const deletePayment = async (paymentId, actorId = null) => {
+    const payment = await prisma.payment.findUnique({
+        where: { id: paymentId },
+        include: { bill: { include: { payments: true } } },
+    });
+
+    if (!payment) {
+        throw new Error("Payment not found");
+    }
+
+    const bill = payment.bill;
+    const totalPaid = bill.payments
+        .filter((p) => p.id !== paymentId && p.status === "COMPLETED")
+        .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+    let newStatus = bill.status;
+    if (totalPaid >= bill.totalAmount) {
+        newStatus = "PAID";
+    } else if (totalPaid > 0) {
+        newStatus = "PARTIALLY_PAID";
+    } else {
+        newStatus = "UNPAID";
+    }
+
+    await prisma.$transaction([
+        prisma.bill.update({
+            where: { id: bill.id },
+            data: {
+                status: newStatus,
+                paymentDate: newStatus === "PAID" ? new Date() : null,
+                paymentMethod: newStatus === "PAID" ? bill.paymentMethod : null,
+            },
+        }),
+        prisma.payment.delete({ where: { id: paymentId } }),
+        prisma.auditLog.create({
+            data: {
+                userId: actorId,
+                action: "DELETE_PAYMENT",
+                resource: "PAYMENT",
+                details: {
+                    paymentId,
+                    billId: bill.id,
+                    amount: payment.amount,
+                    method: payment.method,
+                },
+            },
+        }),
+    ]);
+
+    return { success: true, paymentId, billId: bill.id, newBillStatus: newStatus };
+};
+
 export const getTransactionsCSV = async (filters = {}) => {
     const result = await getTransactionHistory(filters, 1, 100000);
     const rows = [

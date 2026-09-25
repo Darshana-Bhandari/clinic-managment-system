@@ -12,7 +12,7 @@ import {
  * @param {object} files - req.files from uploadFields: { profilePicture: [], certificates: [] }
  */
 export const createDoctor = async (doctorData, files = {}) => {
-  const { userId, ...data } = doctorData;
+  const { userId, department, ...data } = doctorData;
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error('User not found');
@@ -24,8 +24,20 @@ export const createDoctor = async (doctorData, files = {}) => {
   if (existingPatient) throw new Error('User is already registered as a patient');
 
   if (data.licenseNumber) {
-    const existingLicense = await prisma.doctor.findUnique({ where: { licenseNumber: data.licenseNumber } });
+    const existingLicense = await prisma.doctor.findFirst({ where: { licenseNumber: data.licenseNumber } });
     if (existingLicense) throw new Error('License number already exists');
+  }
+
+  let departmentId;
+  if (department) {
+    const matchingDepartment = await prisma.department.findFirst({
+      where: {
+        OR: [{ id: department }, { name: department }],
+      },
+      select: { id: true },
+    });
+    if (!matchingDepartment) throw new Error('Department not found');
+    departmentId = matchingDepartment.id;
   }
 
   // Upload profile picture (single, from 'profilePicture' or 'avatar' field)
@@ -48,6 +60,7 @@ export const createDoctor = async (doctorData, files = {}) => {
   const doctor = await prisma.doctor.create({
     data: {
       userId,
+      departmentId,
       ...data,
       qualifications: data.qualifications || [],
       availableDays: data.availableDays || [],
@@ -172,7 +185,7 @@ export const updateDoctor = async (doctorId, updateData, files = {}) => {
   if (!existingDoctor) throw new Error('Doctor not found');
 
   if (updateData.licenseNumber && updateData.licenseNumber !== existingDoctor.licenseNumber) {
-    const existingLicense = await prisma.doctor.findUnique({ where: { licenseNumber: updateData.licenseNumber } });
+    const existingLicense = await prisma.doctor.findFirst({ where: { licenseNumber: updateData.licenseNumber } });
     if (existingLicense) throw new Error('License number already exists');
   }
 

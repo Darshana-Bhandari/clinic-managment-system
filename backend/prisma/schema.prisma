@@ -75,7 +75,7 @@ model Doctor {
   departmentId      String?
   department        Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   specialization    String?
-  licenseNumber     String?
+  licenseNumber     String?  @unique
   qualifications    Json?    // Array of qualification strings
   experience        Int?
   hospital          String?
@@ -135,6 +135,7 @@ model Appointment {
 
   medicalRecords MedicalRecord[]
   bills          Bill[]
+  payments       Payment[]
 
   @@map("appointments")
 }
@@ -299,7 +300,7 @@ model Notification {
 // AUTHENTICATION MODELS 
 model RefreshToken {
   id        String   @id @default(cuid())
-  token     String   @unique
+  token     String   @unique @db.VarChar(512)
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userAgent String?
@@ -316,7 +317,7 @@ model Session {
   id           String   @id @default(cuid())
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token        String   @unique
+  token        String   @unique @db.VarChar(512)
   userAgent    String?
   ipAddress    String?
   expiresAt    DateTime

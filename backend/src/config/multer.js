@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { uploadToCloudinary, uploadMulterToCloudinary, deleteFromCloudinary } from './cloudinary.js';
+import { ENV } from './env.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -98,6 +99,26 @@ const cleanupTempFile = (filePath) => {
   }
 };
 
+const saveLocalUpload = (file, folder) => {
+  const uploadDir = path.join(__dirname, '../../uploads', folder);
+  fs.mkdirSync(uploadDir, { recursive: true });
+  const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+  const destination = path.join(uploadDir, filename);
+  fs.copyFileSync(file.path, destination);
+  cleanupTempFile(file.path);
+  return {
+    publicId: null,
+    url: `/uploads/${folder}/${filename}`,
+    format: path.extname(file.originalname).slice(1),
+    size: file.size,
+    width: null,
+    height: null,
+    originalName: file.originalname,
+    uploadedAt: new Date().toISOString(),
+    storage: 'local-development',
+  };
+};
+
 /**
  * Upload a single file to Cloudinary and clean up temp.
  * @param {object} file  - Multer file object
@@ -128,9 +149,13 @@ export const uploadToCloudinarySingle = async (file, folder = 'healthcare', opti
       uploadedAt: new Date().toISOString(),
     };
   } catch (error) {
+    if (ENV.NODE_ENV !== 'production') {
+      console.warn('[Uploads] Cloudinary unavailable; using local development storage.');
+      return saveLocalUpload(file, folder.replace(/[^a-z0-9-]/gi, '-'));
+    }
     cleanupTempFile(file.path);
-    console.error('Cloudinary single upload error:', error);
-    throw new Error('Failed to upload file to Cloudinary');
+    console.error('Cloudinary single upload error:', error.cause || error.message);
+    throw error;
   }
 };
 
@@ -164,9 +189,13 @@ export const uploadMultipleToCloudinaryFn = async (files, folder = 'healthcare',
       uploadedAt: new Date().toISOString(),
     }));
   } catch (error) {
+    if (ENV.NODE_ENV !== 'production') {
+      console.warn('[Uploads] Cloudinary unavailable; using local development storage.');
+      return files.map((file) => saveLocalUpload(file, folder.replace(/[^a-z0-9-]/gi, '-')));
+    }
     files.forEach((file) => cleanupTempFile(file.path));
-    console.error('Cloudinary multiple upload error:', error);
-    throw new Error('Failed to upload files to Cloudinary');
+    console.error('Cloudinary multiple upload error:', error.cause || error.message);
+    throw error;
   }
 };
 

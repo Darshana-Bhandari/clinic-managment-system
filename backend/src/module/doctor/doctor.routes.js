@@ -3,6 +3,7 @@ import * as doctorController from './doctor.controller.js';
 import {
   createDoctorSchema,
   updateDoctorSchema,
+  doctorOnboardingSchema,
   doctorIdSchema,
   rateDoctorSchema,
 } from './doctor.schema.js';
@@ -40,6 +41,15 @@ router.get(
 
 // Get current user's doctor profile
 router.get('/me', authorize(ROLES.DOCTOR), doctorController.getDoctorByUserId);
+
+router.post(
+  '/onboarding',
+  authorize(ROLES.DOCTOR),
+  uploadFields,
+  handleMulterError,
+  validate(doctorOnboardingSchema),
+  doctorController.submitDoctorOnboarding
+);
 
 // Get doctor by ID
 router.get(

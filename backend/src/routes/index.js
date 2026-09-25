@@ -12,6 +12,7 @@ import paymentRoutes from "../module/payments/payment.routes.js"
 import khaltiRoutes from "../module/khalti/khalti.routes.js"
 import esewaRoutes from "../module/esewa/esewa.routes.js"
 import dashboardRoutes from "../module/dashboard/dashboard.routes.js"
+import notificationRoutes from "../module/notification/notification.routes.js"
 
 const router = express.Router();
 
@@ -47,5 +48,6 @@ router.use("/payments", paymentRoutes);
 router.use("/khalti", khaltiRoutes);
 router.use("/esewa", esewaRoutes);
 router.use("/dashboard", dashboardRoutes);
+router.use("/notification", notificationRoutes);
 
 export default router;

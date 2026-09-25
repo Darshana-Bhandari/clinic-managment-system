@@ -2,7 +2,7 @@ import prisma from "../../config/database.js";
 import { Prisma } from "@prisma/client";
 
 // create department 
-export const createDepartment = async (departmentData) => {
+export const createDepartment = async (departmentData, createdBy) => {
     const { name, headDoctorId, ...data } = departmentData;
 
     // check if department name already exists
@@ -45,14 +45,7 @@ export const createDepartment = async (departmentData) => {
         },
         include: {
             headDoctor: {
-                include: {
-                    user: {
-                        select: {
-                            fullName: true,
-                            email: true
-                        }
-                    }
-                }
+                select: { id: true, fullName: true, email: true, phone: true }
             }
         }
     });
@@ -60,9 +53,10 @@ export const createDepartment = async (departmentData) => {
     // create audit log
     await prisma.auditLog.create({
         data: {
-            userId: department.headDoctorId || "system", // Ensure there's a valid userId, maybe system or admin Id
+            userId: createdBy,
             action: 'CREATE',
-            description: `Department ${department.name} created`,
+            resource: 'Department',
+            details: { departmentId: department.id, name: department.name },
         },
     });
 
@@ -72,14 +66,16 @@ export const createDepartment = async (departmentData) => {
 // get all departments
 export const getAllDepartments = async (query = {}) => {
     const { page = 1, limit = 10, search, isActive } = query;
-    const skip = (page - 1) * limit;
+    const pageNumber = Number(page) || 1;
+    const limitNumber = Number(limit) || 10;
+    const skip = (pageNumber - 1) * limitNumber;
 
     const where = {};
     if (search) {
         where.name = { contains: search };
     }
     if (isActive !== undefined) {
-        where.isActive = isActive;
+        where.isActive = isActive === 'true' ? true : isActive === 'false' ? false : isActive;
     }
 
     const [departments, total] = await Promise.all([
@@ -87,22 +83,14 @@ export const getAllDepartments = async (query = {}) => {
             where,
             include: {
                 headDoctor: {
-                    include: {
-                        user: {
-                            select: {
-                                fullName: true,
-                                email: true,
-                                phone: true
-                            }
-                        }
-                    }
+                    select: { id: true, fullName: true, email: true, phone: true }
                 },
                 _count: {
                     select: { doctors: true }
                 }
             },
             skip: Number(skip),
-            take: Number(limit),
+            take: limitNumber,
             orderBy: { createdAt: "desc" }
         }),
         prisma.department.count({ where })
@@ -111,8 +99,8 @@ export const getAllDepartments = async (query = {}) => {
     return {
         departments,
         pagination: {
-            page: Number(page),
-            limit: Number(limit),
+            page: pageNumber,
+            limit: limitNumber,
             total,
             totalPages: Math.ceil(total / limit)
         }
@@ -125,15 +113,7 @@ export const getDepartmentById = async (departmentId) => {
         where: { id: departmentId },
         include: {
             headDoctor: {
-                include: {
-                    user: {
-                        select: {
-                            fullName: true,
-                            email: true,
-                            phone: true
-                        }
-                    }
-                }
+                select: { id: true, fullName: true, email: true, phone: true }
             },
             doctors: {
                 include: {
@@ -216,14 +196,7 @@ export const updateDepartment = async (departmentId, updateData) => {
         },
         include: {
             headDoctor: {
-                include: {
-                    user: {
-                        select: {
-                            fullName: true,
-                            email: true
-                        }
-                    }
-                }
+                select: { id: true, fullName: true, email: true, phone: true }
             },
             doctors: {
                 include: {

@@ -9,6 +9,11 @@ cloudinary.config({
   secure: true,
 });
 
+const getCloudinaryError = (error) => ({
+  message: error?.error?.message || error?.message || 'Unknown Cloudinary error',
+  httpCode: error?.http_code || error?.error?.http_code,
+});
+
 // ==================== UPLOAD SINGLE FILE ====================
 export const uploadToCloudinary = async (file, options = {}) => {
   try {
@@ -20,8 +25,11 @@ export const uploadToCloudinary = async (file, options = {}) => {
     });
     return result;
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
-    throw new Error('Failed to upload to Cloudinary');
+    const details = getCloudinaryError(error);
+    console.error('[Cloudinary upload error]', details);
+    const uploadError = new Error('CLOUDINARY_UPLOAD_FAILED');
+    uploadError.cause = details;
+    throw uploadError;
   }
 };
 
@@ -36,8 +44,11 @@ export const uploadMulterToCloudinary = async (files, options = {}) => {
     );
     return await Promise.all(uploadPromises);
   } catch (error) {
-    console.error('Cloudinary multiple upload error:', error);
-    throw new Error('Failed to upload multiple files to Cloudinary');
+    const details = getCloudinaryError(error);
+    console.error('[Cloudinary multiple upload error]', details);
+    const uploadError = new Error('CLOUDINARY_UPLOAD_FAILED');
+    uploadError.cause = details;
+    throw uploadError;
   }
 };
 

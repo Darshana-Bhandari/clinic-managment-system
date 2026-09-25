@@ -1,5 +1,5 @@
 import prisma from "../../config/database.js";
-// import socketEmitter from "../../utils/socketEmitter.js";
+import socketEmitter from "../../utils/socketEmitter.js";
 
 export const bookAppointment = async (appointmentData) => {
     const { patientId, doctorId, date, time, ...data } = appointmentData;

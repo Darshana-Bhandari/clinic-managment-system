@@ -23,6 +23,22 @@ export const createDoctor = async (req, res) => {
   }
 };
 
+export const submitDoctorOnboarding = async (req, res) => {
+  try {
+    const doctor = await doctorService.createDoctor({ ...req.body, userId: req.user.id }, req.files || {});
+    return createdResponse(res, doctor, 'Doctor documents submitted for review');
+  } catch (error) {
+    console.error('Doctor onboarding error:', error);
+    if (error.message === 'Doctor profile already exists for this user') return conflictResponse(res, error.message);
+    if (error.message === 'License number already exists') return conflictResponse(res, error.message);
+    if (error.message === 'Department not found') return notFoundResponse(res, error.message);
+    if (error.message === 'CLOUDINARY_UPLOAD_FAILED') {
+      return errorResponse(res, 'File storage is temporarily unavailable. Please try again later or contact support.', 503);
+    }
+    return errorResponse(res, error.message || 'Failed to submit doctor documents');
+  }
+};
+
 // ==================== GET ALL DOCTORS ====================
 export const getAllDoctors = async (req, res) => {
   try {

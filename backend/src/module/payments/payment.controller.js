@@ -174,8 +174,20 @@ export const downloadTransactionsCSV = async (req, res) => {
   }
 };
 
+export const deletePayment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const actorId = req.user?.id || null;
+    const result = await paymentService.deletePayment(id, actorId);
+    return successResponse(res, result, 'Payment deleted successfully');
+  } catch (error) {
+    if (error.message === 'Payment not found') return notFoundResponse(res, error.message);
+    return errorResponse(res, error.message || 'Failed to delete payment');
+  }
+};
+
 export default {
-  createPayment,
+  createaPayment,
   getAllPayments,
   getPaymentById,
   getPaymentByBillId,
@@ -185,4 +197,5 @@ export default {
   refundPayment,
   getTransactionHistory,
   downloadTransactionsCSV,
+  deletePayment,
 };

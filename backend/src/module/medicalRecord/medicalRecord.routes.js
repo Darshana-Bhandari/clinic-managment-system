@@ -11,10 +11,10 @@ router.use(verifyToken);
 
 // ==================== MEDICAL RECORDS ====================
 
-// Patient history
+// Patient history (patient can view their own)
 router.get(
   '/patient/:patientId/history',
-  authorize('ADMIN', 'DOCTOR', 'RECEPTIONIST'),
+  authorize('ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT'),
   medicalRecordController.getPatientMedicalHistory
 );
 
@@ -33,7 +33,7 @@ router.post(
 // Get / update / delete single record
 router.get(
   '/:id',
-  authorize('ADMIN', 'DOCTOR', 'RECEPTIONIST'),
+  authorize('ADMIN', 'DOCTOR', 'RECEPTIONIST', 'PATIENT'),
   medicalRecordController.getMedicalRecordById
 );
 router.put(

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+=import { z } from 'zod';
 
 const parseMultipartJson = (value) => {
   if (typeof value !== 'string') return value;
@@ -42,6 +42,8 @@ export const createDoctorSchema = z.object({
   availableDays: optionalAvailability,
   bio: z.string().max(500, 'Bio cannot exceed 500 characters').optional(),
 });
+
+export const doctorOnboardingSchema = createDoctorSchema.omit({ userId: true });
 
 // Update Doctor Schema
 export const updateDoctorSchema = z.object({

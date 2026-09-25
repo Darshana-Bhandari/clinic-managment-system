@@ -39,7 +39,7 @@ router.get(
 // Update appointment (Admin, Patient)
 router.put(
   '/:id',
-  authorize(ROLES.ADMIN, ROLES.PATIENT),
+  authorize(ROLES.ADMIN, ROLES.DOCTOR, ROLES.PATIENT),
   validate(updateAppointmentSchema),
   appointmentController.updateAppointment
 );
@@ -47,7 +47,7 @@ router.put(
 // Cancel appointment (Admin, Patient)
 router.patch(
   '/:id/cancel',
-  authorize(ROLES.ADMIN, ROLES.PATIENT),
+  authorize(ROLES.ADMIN, ROLES.DOCTOR, ROLES.PATIENT),
   validate(cancelAppointmentSchema),
   appointmentController.cancelAppointment
 );
