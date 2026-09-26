@@ -17,11 +17,6 @@ export const adminLogin = async (credentials) => {
   return response.data.data;
 };
 
-export const verifyAdminLogin = async (email, otp) => {
-  const response = await axios.post(`${API_URL}/admin/verify-login`, { email, otp });
-  return response.data.data;
-};
-
 export const logout = async () => {
   const response = await axios.post(`${API_URL}/logout`);
   return response.data.data;

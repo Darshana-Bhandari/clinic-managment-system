@@ -1,8 +1,9 @@
-
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronRight, CheckCircle2, User, Calendar, Clock, CreditCard, ChevronLeft } from 'lucide-react';
-import { doctorsData } from '../utils/dummyData';
+import { ChevronRight, CheckCircle2, User, Calendar, Clock, CreditCard, ChevronLeft, Loader2 } from 'lucide-react';
+import { getAllPublicDoctors } from '../services/doctorService';
+import { bookAppointment } from '../services/appointmentService';
+import toast from 'react-hot-toast';
 import Button from '../components/ui/Button';
 
 const timeSlots = [
@@ -13,6 +14,10 @@ const timeSlots = [
 
 const Booking = () => {
   const [step, setStep] = useState(1);
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [booking, setBooking] = useState(false);
+  const [appointmentToken, setAppointmentToken] = useState(null);
   const [formData, setFormData] = useState({
     doctorId: null,
     date: '',
@@ -25,6 +30,20 @@ const Booking = () => {
     paymentMethod: 'clinic'
   });
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getAllPublicDoctors();
+        setDoctors(Array.isArray(data?.doctors) ? data.doctors : Array.isArray(data) ? data : []);
+      } catch (e) {
+        toast.error(e?.response?.data?.message || 'Failed to load doctors');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
   const nextStep = () => setStep((s) => Math.min(s + 1, 4));
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
   
@@ -32,19 +51,50 @@ const Booking = () => {
     setFormData((prev) => ({ ...prev, ...fields }));
   };
 
-  const selectedDoctor = doctorsData.find(d => d.id === formData.doctorId);
+  const selectedDoctor = doctors.find((d) => d.id === formData.doctorId);
+
+  const handleConfirmBooking = async () => {
+    try {
+      setBooking(true);
+      const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+      const patientId = user?.patientId || user?.profile?.patientId || user?.id;
+
+      const payload = {
+        doctorId: formData.doctorId,
+        patientId,
+        date: formData.date,
+        time: formData.time,
+        departmentId: selectedDoctor?.departmentId || selectedDoctor?.department?.id,
+        reason: formData.reason,
+        notes: formData.reason,
+        patientName: formData.patientName,
+        patientPhone: formData.phone,
+        patientAge: formData.age,
+        patientGender: formData.gender,
+        paymentMethod: formData.paymentMethod,
+      };
+
+      const resp = await bookAppointment(payload);
+      const token = resp?.appointmentToken || resp?.token || resp?.id;
+      setAppointmentToken(token);
+      toast.success(`Appointment booked! Token: ${token || resp?.id}`);
+      setStep(5);
+    } catch (e) {
+      toast.error(e?.response?.data?.message || 'Failed to book appointment');
+    } finally {
+      setBooking(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 py-12 dark:bg-slate-950">
       <div className="container-custom max-w-4xl">
         
-        {/* Header & Breadcrumb */}
         <div className="mb-8 text-center">
           <h1 className="font-display text-3xl font-bold text-slate-900 dark:text-white">Book an Appointment</h1>
           <p className="mt-2 text-slate-500">Secure your consultation in just a few steps.</p>
         </div>
 
-        {/* Progress Bar */}
         <div className="mb-8">
           <div className="flex items-center justify-between relative">
             <div className="absolute left-0 top-1/2 -z-10 h-0.5 w-full -translate-y-1/2 bg-slate-200 dark:bg-slate-800" />
@@ -63,7 +113,7 @@ const Booking = () => {
               const isActive = step >= s.num;
               return (
                 <div key={s.num} className="flex flex-col items-center gap-2 bg-slate-50 px-2 dark:bg-slate-950">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors duration-300 ${isActive ? 'border-primary-600 bg-primary-600 text-white' : 'border-slate-300 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-900'}`}>
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors duration-300 ${isActive ? 'border-primary-600 bg-primary-600 text-white' : 'border-slate-300 bg-white text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400'}`}>
                     <Icon className="h-5 w-5" />
                   </div>
                   <span className={`hidden text-xs font-semibold sm:block ${isActive ? 'text-primary-700 dark:text-primary-400' : 'text-slate-400'}`}>
@@ -75,35 +125,42 @@ const Booking = () => {
           </div>
         </div>
 
-        {/* Wizard Content */}
         <div className="rounded-2xl border border-slate-200/60 bg-white p-6 shadow-xl shadow-slate-200/20 sm:p-8 dark:border-slate-800 dark:bg-slate-900 dark:shadow-none">
           
           {step === 1 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="mb-6 font-display text-xl font-bold text-slate-900 dark:text-white">1. Select a Doctor</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {doctorsData.map((doc) => (
-                  <button
-                    key={doc.id}
-                    onClick={() => { updateData({ doctorId: doc.id }); nextStep(); }}
-                    className={`flex items-center gap-4 rounded-xl border p-4 text-left transition-all ${formData.doctorId === doc.id ? 'border-primary-600 bg-primary-50 ring-1 ring-primary-600 dark:bg-primary-900/20' : 'border-slate-200 hover:border-primary-300 hover:bg-slate-50 dark:border-slate-800 dark:hover:border-primary-800 dark:hover:bg-slate-800/50'}`}
-                  >
-                    <img src={doc.image} alt={doc.name} className="h-14 w-14 rounded-full object-cover shadow-sm" />
-                    <div>
-                      <p className="font-bold text-slate-900 dark:text-white">{doc.name}</p>
-                      <p className="text-sm font-medium text-primary-600 dark:text-primary-400">{doc.specialty}</p>
-                      <p className="text-xs text-slate-500">NPR {doc.consultationFee}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {loading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+                </div>
+              ) : doctors.length === 0 ? (
+                <p className="text-center py-12 text-slate-500">No doctors available at the moment.</p>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {doctors.map((doc) => (
+                    <button
+                      key={doc.id}
+                      onClick={() => { updateData({ doctorId: doc.id }); nextStep(); }}
+                      className={`flex items-center gap-4 rounded-xl border p-4 text-left transition-all ${formData.doctorId === doc.id ? 'border-primary-600 bg-primary-50 ring-1 ring-primary-600 dark:bg-primary-900/20' : 'border-slate-200 hover:border-primary-300 hover:bg-slate-50 dark:border-slate-800 dark:hover:border-primary-800 dark:hover:bg-slate-800/50'}`}
+                    >
+                      <img src={doc.image || doc.profilePicture || doc.avatar} alt={doc.name || doc.fullName} className="h-14 w-14 rounded-full object-cover shadow-sm bg-slate-200" />
+                      <div>
+                        <p className="font-bold text-slate-900 dark:text-white">{doc.name || doc.fullName}</p>
+                        <p className="text-sm font-medium text-primary-600 dark:text-primary-400">{doc.specialty || doc.specialization}</p>
+                        <p className="text-xs text-slate-500">NPR {doc.consultationFee || doc.fee || 1500}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {step === 2 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="mb-2 font-display text-xl font-bold text-slate-900 dark:text-white">2. Select Date & Time</h2>
-              <p className="mb-6 text-sm text-slate-500">Booking consultation with <strong className="text-slate-800 dark:text-slate-200">{selectedDoctor?.name}</strong></p>
+              <p className="mb-6 text-sm text-slate-500">Booking consultation with <strong className="text-slate-800 dark:text-slate-200">{selectedDoctor?.name || selectedDoctor?.fullName}</strong></p>
               
               <div className="space-y-6">
                 <div>
@@ -209,8 +266,8 @@ const Booking = () => {
                 <div className="grid gap-y-4 sm:grid-cols-2">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Doctor</p>
-                    <p className="font-medium text-slate-900 dark:text-white">{selectedDoctor?.name}</p>
-                    <p className="text-sm text-slate-500">{selectedDoctor?.specialty}</p>
+                    <p className="font-medium text-slate-900 dark:text-white">{selectedDoctor?.name || selectedDoctor?.fullName}</p>
+                    <p className="text-sm text-slate-500">{selectedDoctor?.specialty || selectedDoctor?.specialization}</p>
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Date & Time</p>
@@ -224,7 +281,7 @@ const Booking = () => {
                   </div>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Consultation Fee</p>
-                    <p className="font-medium text-slate-900 dark:text-white">NPR {selectedDoctor?.consultationFee}</p>
+                    <p className="font-medium text-slate-900 dark:text-white">NPR {selectedDoctor?.consultationFee || selectedDoctor?.fee || 1500}</p>
                   </div>
                 </div>
               </div>
@@ -257,7 +314,7 @@ const Booking = () => {
                 <CheckCircle2 className="h-10 w-10" />
               </div>
               <h2 className="mb-2 font-display text-2xl font-bold text-slate-900 dark:text-white">Booking Confirmed!</h2>
-              <p className="text-slate-500">Your appointment token is <span className="font-mono font-bold text-slate-900 dark:text-white">TK-042</span></p>
+              <p className="text-slate-500">Your appointment token is <span className="font-mono font-bold text-slate-900 dark:text-white">{appointmentToken || 'Generated'}</span></p>
               
               <div className="mt-8 flex justify-center gap-4">
                 <Link to="/">
@@ -270,7 +327,6 @@ const Booking = () => {
             </div>
           )}
 
-          {/* Footer Actions */}
           {step < 5 && (
             <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6 dark:border-slate-800">
               {step > 1 ? (
@@ -290,8 +346,13 @@ const Booking = () => {
                   Continue <ChevronRight className="ml-1.5 h-4 w-4" />
                 </Button>
               ) : (
-                <Button variant="primary" onClick={() => setStep(5)}>
-                  Confirm Booking
+                <Button 
+                  variant="primary" 
+                  onClick={handleConfirmBooking}
+                  loading={booking}
+                  disabled={booking}
+                >
+                  {booking ? 'Booking...' : 'Confirm Booking'}
                 </Button>
               )}
             </div>

@@ -1,10 +1,6 @@
-import axios from '../utils/axios.js'
-import {io} from "socket.io-client"
+import { io } from 'socket.io-client';
 
-const API_URL = '/chat'
-
-
-const SOCKET_URL = process.env.SOCKET_URL;
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || window.location.origin;
 
 let socket = null;
 
@@ -17,21 +13,21 @@ export const connectSocket= (token) =>{
 
     socket =io(SOCKET_URL,{
         auth:{token},
-        transports:['websocket','pooling'],
+        transports: ['websocket', 'polling'],
         reconnection:true,
         reconnectionAttempts:5
 
     })
 
-    socket.on('connect',()=>{
-        console.log('socket connected')
-    })
-     socket.on('disconnect',()=>{
-        console.log('socket disconnected')
-    })
-     socket.on('socket_error',(err)=>{
-        console.log('socket connecttion error:',err.message)
-    })
+    socket.on('connect', () => {
+      if (import.meta.env.DEV) console.debug('[socket] connected', socket.id);
+    });
+    socket.on('disconnect', (reason) => {
+      if (import.meta.env.DEV) console.debug('[socket] disconnected', reason);
+    });
+    socket.on('socket_error', (err) => {
+      if (import.meta.env.DEV) console.debug('[socket] connection error:', err?.message || err);
+    });
 
 
     return socket 
@@ -48,69 +44,66 @@ export const disConnectSocket= () =>{
 
 export const getSocket =() => socket;
 
-//chat apis
-export const getConversations = async ()=>{
-    const response = await axios.get(`${API_URL}/conversations`);
-    return response.data.data
-}
-//chat History
-export const getChatHistory = async (userId, params={})=>{
-    const response = await axios.get(`${API_URL}/history/${userId}`, {params});
+export const requestConversations = () => socket?.emit('chat_conversations');
 
+export const requestChatHistory = (withUserId, page = 1, limit = 50) =>
+    socket?.emit('chat_history', { withUserId, page, limit });
 
-    return response.data.data
-}
+export const markConversationAsRead = (conversationUserId, messageIds = []) =>
+    socket?.emit('chat_message_read', { conversationUserId, messageIds });
 
+export const onNewMessage = (callback) => {
+    socket?.on('chat_message', callback);
+    return () => socket?.off('chat_message', callback);
+};
 
-//send message 
-export const sendMessage = async (data)=>{
-    const response = await axios.post(`${API_URL}/message`,data);
-    return response.data.data
-}
+export const onMessageSent = (callback) => {
+    socket?.on('chat_message_sent', callback);
+    return () => socket?.off('chat_message_sent', callback);
+};
 
-//marksmessageas read
-export const marksMessageAsRead = async (messageId)=>{
-    const response = await axios.patch(`${API_URL}/messages/${messageId}/read`);
-    return response.data.data
-}
+export const onHistory = (callback) => {
+    socket?.on('chat_history', callback);
+    return () => socket?.off('chat_history', callback);
+};
 
+export const onConversations = (callback) => {
+    socket?.on('chat_conversations', callback);
+    return () => socket?.off('chat_conversations', callback);
+};
 
+export const onTyping = (callback) => {
+    socket?.on('chat_typing', callback);
+    return () => socket?.off('chat_typing', callback);
+};
 
-//socket events
-export const onNewMessage=(callback)=>{
-    if(socket)
-        socket.on('chat:message',callback)
-}
+export const onError = (callback) => {
+    socket?.on('error_event', callback);
+    return () => socket?.off('error_event', callback);
+};
 
+export const emitMessage = (data) => socket?.emit('chat_message', data);
 
-export const onMessageSent = (callback)=>{
-    if(socket)socket.on('chat:sent',callback)
-}
-
-export const onTyping = (callback) =>{
-     if(socket)socket.on('chat:typing',callback)
-}
-
-
-export const emitMessage = (data) =>{
-     if(socket)socket.emit('chat:message',data)
-}
-export const emitTyping = (recipientId, isTyping) =>{
-     if(socket)socket.emit('chat:typing',{recipientId, isTyping})
-}
+export const emitTyping = (recipientId, isTyping) => {
+    socket?.emit(isTyping ? 'chat_typing' : 'chat_stop_typing', { recipientId });
+};
 
 
 export default {
     connectSocket,
     disConnectSocket,
     getSocket,
-    getConversations,
-    getChatHistory,
-    sendMessage,
-    marksMessageAsRead,
+    requestConversations,
+    requestChatHistory,
+    markConversationAsRead,
     onNewMessage,
     onMessageSent,
-    onTyping,emitMessage,emitTyping
+    onHistory,
+    onConversations,
+    onTyping,
+    onError,
+    emitMessage,
+    emitTyping,
 }
 
 

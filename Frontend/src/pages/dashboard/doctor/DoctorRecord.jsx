@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   FileText,
@@ -29,45 +29,6 @@ const recordTypes = [
   { label: 'Lab / Imaging', value: 'Report', Icon: ScanSearch },
 ];
 
-const samplePrescriptions = [];
-const sampleReports = [];
-
-const recordKpis = [
-  { label: 'Total records', value: 482, sub: 'All consultations', tone: 'primary' },
-  { label: 'Active Rx', value: 186, sub: 'Prescriptions active', tone: 'emerald' },
-  { label: 'Pending reports', value: 12, sub: 'Lab / imaging', tone: 'amber' },
-  { label: 'This month', value: 56, sub: 'New medical entries', tone: 'sky' },
-];
-
-// const records = [
-//   { id: 'MR-3021', patientId: 'P-2041', patient: 'Anita Shrestha', date: 'Today', type: 'Consultation', diagnosis: 'Essential hypertension - BP uncontrolled', doctor: 'Dr. Ram Sharma', prescriptions: 2, reports: 1, status: 'In progress' },
-//   { id: 'MR-3020', patientId: 'P-2041', patient: 'Anita Shrestha', date: '2 weeks ago', type: 'Follow-up', diagnosis: 'BP improved (132/84), continue meds', doctor: 'Dr. Ram Sharma', prescriptions: 2, reports: 0, status: 'Closed' },
-//   { id: 'MR-3019', patientId: 'P-2044', patient: 'Suresh Magar', date: 'Today', type: 'Report review', diagnosis: 'ECG: NSR, no ischemic changes', doctor: 'Dr. Ram Sharma', prescriptions: 0, reports: 3, status: 'Closed' },
-//   { id: 'MR-3018', patientId: 'P-2048', patient: 'Kamal Bhandari', date: '5 days ago', type: 'Procedure note', diagnosis: 'Coronary angiography - LAD 80% lesion, stent placed', doctor: 'Dr. Ram Sharma', prescriptions: 5, reports: 4, status: 'Closed' },
-//   { id: 'MR-3017', patientId: 'P-2043', patient: 'Bina Tamang', date: 'Yesterday', type: 'Consultation', diagnosis: 'MVP with mild MR, reassurance', doctor: 'Dr. Ram Sharma', prescriptions: 1, reports: 1, status: 'Closed' },
-//   { id: 'MR-3016', patientId: 'P-2047', patient: 'Sarita Gurung', date: '1 week ago', type: 'Follow-up', diagnosis: 'Peripartum CMP resolved, EF 58%', doctor: 'Dr. Ram Sharma', prescriptions: 0, reports: 2, status: 'Closed' },
-//   { id: 'MR-3015', patientId: 'P-2049', patient: 'Hari Sharma', date: 'Yesterday', type: 'Medication change', diagnosis: 'Switched Lisinopril → Telmisartan due to cough', doctor: 'Dr. Ram Sharma', prescriptions: 2, reports: 0, status: 'Closed' },
-// ];
-
-// const recordTypes = [
-//   { label: 'All types', value: 'All', Icon: FileText, tone: 'bg-slate-50 text-slate-700 dark:bg-slate-800 dark:text-slate-300' },
-//   { label: 'Consultations', value: 'Consultation', Icon: Stethoscope, tone: 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' },
-//   { label: 'Prescriptions', value: 'Rx', Icon: Pill, tone: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' },
-//   { label: 'Lab / Imaging', value: 'Report', Icon: ScanSearch, tone: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' },
-// ];
-
-// const samplePrescriptions = [
-//   { name: 'Telmisartan 40mg', dosage: 'Once daily', frequency: 'After breakfast', duration: '30 days', refillable: 2 },
-//   { name: 'Amlodipine 5mg', dosage: '5mg', frequency: 'Once at bedtime', duration: '30 days', refillable: 2 },
-//   { name: 'Atorvastatin 20mg', dosage: '20mg', frequency: 'Once at bedtime', duration: '90 days', refillable: 1 },
-// ];
-
-// const sampleReports = [
-//   { name: 'ECG (Resting)', date: 'Today', status: 'Completed', file: 'ECG_MR3021.pdf' },
-//   { name: 'Lipid Profile', date: '2 days ago', status: 'Completed', file: 'LIPID_2044.pdf' },
-//   { name: '2D Echo', date: 'Pending', status: 'Pending', file: '—' },
-// ];
-
 
 
 const DoctorRecords = () => {
@@ -82,21 +43,39 @@ const DoctorRecords = () => {
   const [filter, setFilter] = useState({ search: '', patientId: '', fromDate: '', toDate: '' });
   const [recordForm, setRecordForm] = useState({ patientId: '', doctorId: '', symptoms: '', diagnosis: '', notes: '' });
 
-  const filtered = records.filter((record) => {
-    if (typeFilter !== 'All' && typeFilter === 'Rx' && record.prescriptions === 0) return false;
-    if (typeFilter !== 'All' && typeFilter === 'Report' && record.reports === 0) return false;
-    if (typeFilter === 'Consultation' && record.type !== 'Consultation') return false;
-    if (!search) return true;
-    const query = search.toLowerCase();
-    return [record.patient, record.diagnosis, record.id].some((value) => value?.toLowerCase().includes(query));
-  });
+  const recordKpis = useMemo(() => {
+    const total = records.length;
+    const withPrescriptions = records.filter((r) => (r.prescriptions || 0) > 0).length;
+    const pendingReports = records.reduce(
+      (sum, r) => sum + (r.reportItems || []).filter((rp) => rp.status !== 'Completed' && rp.status !== 'Ready').length,
+      0,
+    );
+    const now = new Date();
+    const thisMonth = records.filter((r) => {
+      const d = new Date(r.diagnosisDate || r.createdAt);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).length;
+    return [
+      { label: 'Total records', value: total, sub: 'All consultations', tone: 'primary' },
+      { label: 'With Rx', value: withPrescriptions, sub: 'Prescriptions attached', tone: 'emerald' },
+      { label: 'Pending reports', value: pendingReports, sub: 'Lab / imaging', tone: 'amber' },
+      { label: 'This month', value: thisMonth, sub: 'New medical entries', tone: 'sky' },
+    ];
+  }, [records]);
 
-  // const filtered = records.filter((r) => {
-  //   if (typeFilter !== 'All' && !r.type.includes(typeFilter) && !(typeFilter === 'Report' && r.reports > 0) && !(typeFilter === 'Rx' && r.prescriptions > 0)) return false;
-  //   if (!search) return true;
-  //   const q = search.toLowerCase();
-  //   return r.patient.toLowerCase().includes(q) || r.diagnosis.toLowerCase().includes(q) || r.id.toLowerCase().includes(q);
-  // });
+  const filtered = useMemo(
+    () =>
+      records.filter((record) => {
+        if (typeFilter === 'Rx' && (record.prescriptions || 0) === 0) return false;
+        if (typeFilter === 'Report' && (record.reports || 0) === 0) return false;
+        if (typeFilter === 'Consultation' && !String(record.type || '').includes('Consult')) return false;
+        if (!search) return true;
+        const query = search.toLowerCase();
+        return [record.patient, record.diagnosis, record.id, record.patientId]
+          .some((value) => String(value || '').toLowerCase().includes(query));
+      }),
+    [records, typeFilter, search],
+  );
   // fetch 
   const fetchRecords = async(params={})=>{
     setLoading(true)
@@ -199,19 +178,25 @@ const handlePageChange = (newPage )=>{
         ))}
       </div>
 
+      {error && (
+        <div className="rounded-xl border border-danger/20 bg-danger/5 px-4 py-3 text-sm text-danger">
+          {error}
+        </div>
+      )}
+
       {/* Toolbar */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
+          <form onSubmit={(e) => { e.preventDefault(); setPagination((p) => ({ ...p, page: 1 })); fetchRecords({ page: 1, search: filter.search }); }} className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setFilter((f) => ({ ...f, search: e.target.value })); }}
               placeholder="Search records, patients, diagnosis…"
               className="w-72 rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-700 outline-none transition-colors focus:border-primary-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
             />
-          </div>
+          </form>
           <div className="inline-flex rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
             {recordTypes.map((t) => (
               <button
@@ -227,72 +212,101 @@ const handlePageChange = (newPage )=>{
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <button onClick={handleReset} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+            Reset filters
+          </button>
           <button onClick={() => setCreateOpen(true)} className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-3 py-2 text-xs font-semibold text-white hover:bg-primary-700 shadow-sm">
             <Plus className="h-4 w-4" /> New record
           </button>
         </div>
-        //errors 
-        {error && (
-          <div className='bg-red-100 ' > {error} </div>
-
-        )  }
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Records list */}
         <SectionCard className="lg:col-span-2" title={`Medical records (${filtered.length})`} subtitle={loading ? 'Loading records...' : 'Click to view full record'} bodyClassName="p-0">
-          {filtered.length === 0 ? (
+          {loading && records.length === 0 ? (
+            <div className="p-10 text-center text-sm text-slate-400">
+              <div className="spinner spinner-sm mx-auto mb-2" />
+              Loading your records...
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="p-10 text-center text-sm text-slate-400">
               <FileText className="mx-auto h-10 w-10 mb-2 text-slate-300 dark:text-slate-700" />
               No records match your filters.
             </div>
           ) : (
-            <ul className="divide-y divide-slate-50 dark:divide-slate-800/70">
-              {filtered.map((r) => (
-                <li
-                  key={r.id}
-                  onClick={() => setSelected(r)}
-                  className={`cursor-pointer p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40 ${selected?.id === r.id ? 'bg-primary-50/60 dark:bg-primary-900/15' : ''}`}
-                >
-                  <div className="flex items-start gap-4">
-                    <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                      r.type.includes('Consult') ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' :
-                      r.type.includes('Procedure') ? 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' :
-                      r.type.includes('Report') ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
-                      'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
-                    }`}>
-                      {r.type.includes('Report') ? <ScanSearch className="h-4.5 w-4.5" /> :
-                       r.type.includes('Procedure') ? <Stethoscope className="h-4.5 w-4.5" /> :
-                       r.type.includes('Follow') || r.type.includes('Medication') ? <Pill className="h-4.5 w-4.5" /> :
-                       <FileText className="h-4.5 w-4.5" />}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-[11px] font-bold text-slate-500">{r.id}</span>
-                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">{r.type}</span>
-                            <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
-                              r.status === 'In progress' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
-                              'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                            }`}>{r.status}</span>
+            <>
+              <ul className="divide-y divide-slate-50 dark:divide-slate-800/70">
+                {filtered.map((r) => (
+                  <li
+                    key={r.id}
+                    onClick={() => setSelected(r)}
+                    className={`cursor-pointer p-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/40 ${selected?.id === r.id ? 'bg-primary-50/60 dark:bg-primary-900/15' : ''}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                        r.type.includes('Consult') ? 'bg-primary-50 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300' :
+                        r.type.includes('Procedure') ? 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300' :
+                        r.type.includes('Report') ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
+                        'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+                      }`}>
+                        {r.type.includes('Report') ? <ScanSearch className="h-4.5 w-4.5" /> :
+                         r.type.includes('Procedure') ? <Stethoscope className="h-4.5 w-4.5" /> :
+                         r.type.includes('Follow') || r.type.includes('Medication') ? <Pill className="h-4.5 w-4.5" /> :
+                         <FileText className="h-4.5 w-4.5" />}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[11px] font-bold text-slate-500">{r.id}</span>
+                              <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300">{r.type}</span>
+                              <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${
+                                r.status === 'In progress' ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300' :
+                                'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                              }`}>{r.status}</span>
+                            </div>
+                            <p className="mt-1 font-semibold text-slate-900 dark:text-white">{r.patient}</p>
                           </div>
-                          <p className="mt-1 font-semibold text-slate-900 dark:text-white">{r.patient}</p>
+                          <div className="shrink-0 text-right">
+                            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{r.date}</p>
+                            <p className="text-[11px] text-slate-400 flex items-center gap-1 justify-end">
+                              {r.prescriptions > 0 && <span className="flex items-center gap-0.5"><Pill className="h-3 w-3" /> {r.prescriptions}</span>}
+                              {r.reports > 0 && <span className="flex items-center gap-0.5"><ScanSearch className="h-3 w-3" /> {r.reports}</span>}
+                            </p>
+                          </div>
                         </div>
-                        <div className="shrink-0 text-right">
-                          <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">{r.date}</p>
-                          <p className="text-[11px] text-slate-400 flex items-center gap-1 justify-end">
-                            {r.prescriptions > 0 && <span className="flex items-center gap-0.5"><Pill className="h-3 w-3" /> {r.prescriptions}</span>}
-                            {r.reports > 0 && <span className="flex items-center gap-0.5"><ScanSearch className="h-3 w-3" /> {r.reports}</span>}
-                          </p>
-                        </div>
+                        <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 line-clamp-2"><strong>Diagnosis:</strong> {r.diagnosis}</p>
                       </div>
-                      <p className="mt-1 text-xs text-slate-600 dark:text-slate-400 line-clamp-2"><strong>Diagnosis:</strong> {r.diagnosis}</p>
                     </div>
+                  </li>
+                ))}
+              </ul>
+              {pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-slate-100 px-4 py-3 dark:border-slate-800">
+                  <p className="text-xs text-slate-500">
+                    Page {pagination.page} of {pagination.totalPages}
+                    {pagination.total > 0 && ` · ${pagination.total} total`}
+                  </p>
+                  <div className="flex gap-1.5">
+                    <button
+                      disabled={pagination.page <= 1}
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      Prev
+                    </button>
+                    <button
+                      disabled={pagination.page >= pagination.totalPages}
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-800"
+                    >
+                      Next
+                    </button>
                   </div>
-                </li>
-              ))}
-            </ul>
+                </div>
+              )}
+            </>
           )}
         </SectionCard>
 
@@ -308,12 +322,16 @@ const handlePageChange = (newPage )=>{
               <div className="p-5">
                 <div className="flex items-center gap-3">
                   <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 font-display text-xs font-extrabold text-white">
-                    {selected.patient.split(' ').map((n) => n[0]).join('').slice(0, 2)}
+                    {String(selected.patient || '')
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2) || '??'}
                   </span>
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-white">{selected.patient}</p>
                     <p className="text-xs text-slate-500 flex items-center gap-1.5">
-                      <UserCircle className="h-3 w-3" /> {selected.patientId}
+                      <UserCircle className="h-3 w-3" /> {selected.patientId || 'Unknown ID'}
                     </p>
                   </div>
                 </div>
@@ -325,6 +343,11 @@ const handlePageChange = (newPage )=>{
                     </span>
                   </div>
                   <p className="mt-2 text-sm leading-snug text-slate-800 dark:text-slate-200">{selected.diagnosis}</p>
+                  {selected.notes && (
+                    <p className="mt-3 border-t border-slate-200/50 pt-3 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+                      <strong className="text-slate-700 dark:text-slate-300">Notes:</strong> {selected.notes}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -332,56 +355,89 @@ const handlePageChange = (newPage )=>{
               <div className="p-5">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-                    <Pill className="h-3.5 w-3.5" /> Prescriptions ({(selected.prescriptionItems || samplePrescriptions).length})
+                    <Pill className="h-3.5 w-3.5" /> Prescriptions ({(selected.prescriptionItems || []).length})
                   </p>
-                  <button className="text-[11px] font-bold text-primary-700 hover:underline dark:text-primary-300 flex items-center gap-1">
-                    Print <Download className="h-3 w-3" />
-                  </button>
+                  {(selected.prescriptionItems || []).length > 0 && (
+                    <button className="text-[11px] font-bold text-primary-700 hover:underline dark:text-primary-300 flex items-center gap-1">
+                      Print <Download className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
                 <div className="mt-3 space-y-2">
-                  {(selected.prescriptionItems?.length ? selected.prescriptionItems : samplePrescriptions).map((rx, idx) => (
-                    <div key={idx} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900 dark:text-white">{rx.medication || rx.name}</p>
-                          <p className="text-xs text-slate-500">{rx.dosage} · {rx.frequency} · {rx.duration}</p>
+                  {(selected.prescriptionItems || []).length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-400 dark:border-slate-700">
+                      No prescriptions on this record yet.
+                    </p>
+                  ) : (
+                    (selected.prescriptionItems || []).map((rx, idx) => (
+                      <div key={idx} className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{rx.medication || rx.name || 'Unnamed medication'}</p>
+                            <p className="text-xs text-slate-500">
+                              {[rx.dosage, rx.frequency, rx.duration].filter(Boolean).join(' · ') || 'No dosage details'}
+                            </p>
+                            {rx.instructions && (
+                              <p className="mt-1 text-[11px] text-slate-500">{rx.instructions}</p>
+                            )}
+                          </div>
+                          {(rx.refills ?? rx.refillable) > 0 && (
+                            <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                              {rx.refills ?? rx.refillable} refills
+                            </span>
+                          )}
                         </div>
-                        {rx.refillable > 0 && (
-                          <span className="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                            {rx.refills ?? rx.refillable} refill
-                          </span>
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
 
               {/* Reports */}
               <div className="p-5">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
-                  <ScanSearch className="h-3.5 w-3.5" /> Reports &amp; investigations ({(selected.reportItems || sampleReports).length})
+                  <ScanSearch className="h-3.5 w-3.5" /> Reports &amp; investigations ({(selected.reportItems || []).length})
                 </p>
                 <div className="mt-3 space-y-2">
-                  {(selected.reportItems?.length ? selected.reportItems : sampleReports).map((r, idx) => (
-                    <div key={idx} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{r.name}</p>
-                        <p className="text-xs text-slate-500">{r.date} · {r.file}</p>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
-                          r.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' :
-                          'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                        }`}>{r.status}</span>
-                        {r.status === 'Completed' && (
-                          <button className="flex items-center gap-1 rounded-lg bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
-                            <ArrowUpRight className="h-3 w-3" /> View
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                  {(selected.reportItems || []).length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-slate-200 p-4 text-center text-xs text-slate-400 dark:border-slate-700">
+                      No investigations or reports yet.
+                    </p>
+                  ) : (
+                    (selected.reportItems || []).map((r, idx) => {
+                      const hasFile = r.file || r.fileName || r.url;
+                      const status = r.status || 'Pending';
+                      const isReady = status === 'Completed' || status === 'Ready' || hasFile;
+                      return (
+                        <div key={idx} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-800 dark:bg-slate-900">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-white">{r.name || r.title || `Report ${idx + 1}`}</p>
+                            <p className="text-xs text-slate-500">
+                              {r.date || (r.uploadedAt ? new Date(r.uploadedAt).toLocaleDateString() : 'N/A')} ·{' '}
+                              {hasFile ? (
+                                <a href={r.url || r.file} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
+                                  View file
+                                </a>
+                              ) : (
+                                'No file attached'
+                              )}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                              isReady ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300' :
+                              'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                            }`}>{status}</span>
+                            {isReady && (
+                              <button className="flex items-center gap-1 rounded-lg bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700">
+                                <ArrowUpRight className="h-3 w-3" /> View
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
 
@@ -407,8 +463,8 @@ const handlePageChange = (newPage )=>{
 
       {/* New record modal */}
       {createOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto animate-in fade-in zoom-in-95 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+        <div className="fixed inset-0 z-modal-backdrop flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto animate-scale-in rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
               <div>
                 <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">Create Medical Record</h3>
@@ -420,12 +476,14 @@ const handlePageChange = (newPage )=>{
             </div>
             <div className="mt-4 space-y-3 text-sm">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Patient</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  Patient ID <span className="text-danger">*</span>
+                </label>
                 <input value={recordForm.patientId} onChange={(e) => setRecordForm({ ...recordForm, patientId: e.target.value })} placeholder="Patient ID" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Doctor ID</label>
-                <input value={recordForm.doctorId} onChange={(e) => setRecordForm({ ...recordForm, doctorId: e.target.value })} placeholder="Doctor ID" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
+                <input value={recordForm.doctorId} onChange={(e) => setRecordForm({ ...recordForm, doctorId: e.target.value })} placeholder="Optional – defaults to the signed-in doctor" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Visit type</label>
@@ -438,7 +496,9 @@ const handlePageChange = (newPage )=>{
                 <textarea value={recordForm.symptoms} onChange={(e) => setRecordForm({ ...recordForm, symptoms: e.target.value })} rows={2} placeholder="e.g. Chest pain, fatigue (comma-separated)" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">Diagnosis</label>
+                <label className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400">
+                  Diagnosis <span className="text-danger">*</span>
+                </label>
                 <textarea value={recordForm.diagnosis} onChange={(e) => setRecordForm({ ...recordForm, diagnosis: e.target.value })} rows={2} placeholder="Working diagnosis, assessment &amp; plan" className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 outline-none focus:border-primary-500 dark:border-slate-800 dark:bg-slate-950 dark:text-white" />
               </div>
               <div>
@@ -448,7 +508,7 @@ const handlePageChange = (newPage )=>{
             </div>
             <div className="mt-5 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
               <button onClick={() => setCreateOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-600 dark:border-slate-800 dark:text-slate-300">Cancel</button>
-              <button onClick={handleCreateRecord} disabled={!recordForm.patientId || !recordForm.doctorId || !recordForm.diagnosis} className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50">
+              <button onClick={handleCreateRecord} disabled={!recordForm.patientId || !recordForm.diagnosis} className="flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700 disabled:cursor-not-allowed disabled:opacity-50">
                 <CheckCircle2 className="h-4 w-4" /> Save record
               </button>
             </div>

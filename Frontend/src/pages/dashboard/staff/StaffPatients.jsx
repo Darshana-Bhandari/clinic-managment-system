@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Search, UserPlus, Phone, X, CheckCircle2, Pencil, LoaderCircle } from 'lucide-react';
 import SectionCard from '../../../components/sections/SectionCard';
-import { fetchPatients, savePatientProfile } from "../../../Redux/slices/patientsSlice.js";
+import { fetchPatients, savePatientProfile } from '../../../Redux/slices/patientSlice.js';
 
 const avatarTones = [
   'bg-primary-100 text-primary-700',

@@ -23,8 +23,8 @@ export const createMedicalRecord = async (medicalData) => {
     const response = await axios.post(API_URL, medicalData);
     return response.data.data;
 };
-//updateMedical record 
-export const updateMedicalRecord = async (updateMedicalData, medicalId) => {
+//updateMedical record
+export const updateMedicalRecord = async (medicalId, updateMedicalData) => {
     const response = await axios.put(`${API_URL}/${medicalId}`, updateMedicalData);
     return response.data.data;
 };
@@ -42,9 +42,11 @@ export const getPatientMedicalHistory = async (patientId, params = {}) => {
 export const createPrescription = async (data) => (await axios.post(`${API_URL}/prescription`, data)).data.data;
 export const updatePrescription = async (id, data) => (await axios.put(`${API_URL}/prescription/${id}`, data)).data.data;
 export const deletePrescription = async (id) => (await axios.delete(`${API_URL}/prescription/${id}`)).data.data;
+export const getPrescriptionById = async (id) => (await axios.get(`${API_URL}/prescription/${id}`)).data.data;
 export const createReport = async (data) => (await axios.post(`${API_URL}/report`, data, { headers: { 'Content-Type': 'multipart/form-data' } })).data.data;
 export const updateReport = async (id, data) => (await axios.put(`${API_URL}/report/${id}`, data, { headers: { 'Content-Type': 'multipart/form-data' } })).data.data;
 export const deleteReport = async (id) => (await axios.delete(`${API_URL}/report/${id}`)).data.data;
+export const getReportById = async (id) => (await axios.get(`${API_URL}/report/${id}`)).data.data;
 
 
 

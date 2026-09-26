@@ -21,3 +21,8 @@ export const getDoctorLoad = async (params = {}) => {
   const response = await axios.get(`${API_URL}/doctor-load`, { params });
   return response.data.data;
 };
+
+export const getDoctorSelfDashboard = async (params = {}) => {
+  const response = await axios.get(`${API_URL}/doctor-me`, { params });
+  return response.data.data;
+};

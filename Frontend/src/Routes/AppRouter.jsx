@@ -11,14 +11,14 @@ import DoctorLayout from '../components/layout/DoctorLayout';
 
 import Home from '../pages/Home';
 import Doctor from '../pages/Doctor';
-import DoctorDetail from "../pages/DoctorDetails";
+import DoctorDetail from '../pages/DoctorDetail';
 import Departments from '../pages/Departments.jsx';
 import DepartmentDetail from '../pages/DepartmentDetail.jsx';
 import About from '../pages/About';
 import Contact from '../pages/Contact';
 import NotFound from '../pages/Error';
-import Services from "../pages/Service";
-import ServiceDetail from "../pages/ServiceDetails";
+import Services from '../pages/Services';
+import ServiceDetail from '../pages/ServiceDetail';
 import Booking from '../pages/Booking';
 import Login from '../pages/Login.jsx';
 import Register from '../pages/Register.jsx';
@@ -32,7 +32,7 @@ import StaffAppointments from '../pages/dashboard/staff/StaffAppointments';
 import StaffPatients from '../pages/dashboard/staff/StaffPatients';
 import StaffSettings from '../pages/dashboard/staff/StaffSettings';
 import AdminDoctors from '../pages/dashboard/admin/AdminDoctors';
-import AdminDepartments from "../pages/dashboard/admin/AdminDepartments.jsx";
+import AdminDepartments from '../pages/dashboard/admin/AdminDepartments.jsx';
 import AdminStaff from '../pages/dashboard/admin/AdminStaff';
 import StaffQueue from '../pages/dashboard/staff/StaffQueue';
 import StaffBilling from '../pages/dashboard/staff/StaffBilling';
@@ -40,6 +40,7 @@ import AdminReports from '../pages/dashboard/admin/AdminReports';
 import AdminSettings from '../pages/dashboard/admin/AdminSettings';
 import PatientAppointments from '../pages/dashboard/patient/PatientAppointments';
 import PatientHistory from '../pages/dashboard/patient/PatientHistory';
+import PatientBills from '../pages/dashboard/patient/PatientBills';
 
 import DoctorOverview from '../pages/dashboard/doctor/DoctorOverview';
 import DoctorAppointments from '../pages/dashboard/doctor/DoctorAppointments';
@@ -215,6 +216,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <PatientAppointments /> },
       { path: 'history', element: <PatientHistory /> },
+      { path: 'bills', element: <PatientBills /> },
     ],
   },
 

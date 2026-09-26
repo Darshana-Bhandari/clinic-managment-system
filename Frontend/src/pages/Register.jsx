@@ -63,10 +63,9 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    const result = await dispatch(registerUser(formData));
+    const result = await dispatch(registerUser({ ...formData, role: 'PATIENT' }));
     if (registerUser.fulfilled.match(result)) {
       localStorage.setItem('pending_verification_email', formData.email);
-      if (formData.role === 'DOCTOR') localStorage.setItem('doctor_onboarding_pending', 'true');
       dispatch({ type: 'auth/clearAuth' });
       navigate('/verify-email', { replace: true, state: { email: formData.email } });
     }
@@ -137,26 +136,6 @@ const Register = () => {
           autoComplete="tel"
           disabled={isLoading}
         />
-
-        <div>
-          <label
-            htmlFor="role"
-            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300"
-          >
-            Account type
-          </label>
-          <select
-            id="role"
-            name="role"
-            value={formData.role}
-            onChange={handleChange}
-            className="input"
-            disabled={isLoading}
-          >
-            <option value="PATIENT">Patient</option>
-            <option value="DOCTOR">Doctor</option>
-          </select>
-        </div>
 
         <Input
           label="Password"
