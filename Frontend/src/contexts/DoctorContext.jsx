@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { createContext, useEffect, useState } from 'react';
+
 import { getAllPublicDoctors } from '../services/doctorService.js';
-import { DoctorContext } from './doctorContext.js';
+
+export const DoctorContext = createContext(null);
 
 const normalizeDoctor = (doctor) => ({
+  
   ...doctor,
   id: doctor.id,
   name: doctor.user?.fullName || 'Medical Specialist',

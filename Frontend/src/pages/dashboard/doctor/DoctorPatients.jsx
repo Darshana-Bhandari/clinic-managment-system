@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import SectionCard from '../../../components/sections/SectionCard';
 import StatCard from '../../../components/sections/StatCard';
-import { fetchPatientById, fetchPatients } from '../../../Redux/slices/patientSlice.js';
+import { fetchPatientById, fetchPatients } from "../../../Redux/slices/patientSlice.js";
 
 const toPatientRow = (patient) => ({
   ...patient,

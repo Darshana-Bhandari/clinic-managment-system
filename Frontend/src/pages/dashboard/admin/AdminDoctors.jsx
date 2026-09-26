@@ -19,11 +19,7 @@ import Button from '../../../components/ui/Button';
 import Input from '../../../components/ui/Input';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import { getAllDoctors, updateDoctor } from '../../../services/doctorService';
-import {
-  createStaff,
-  deleteStaff,
-  toggleStaffStatus,
-} from '../../../services/adminServices';
+import { createStaff, deleteStaff, toggleStaffStatus } from "../../../services/adminService";
 import { getAllDepartments } from '../../../services/departmentService';
 import { currency } from '../../../utils/dashboardData';
 import { getInitials } from '../../../utils/helpers';

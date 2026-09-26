@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Building2, Edit3, MapPin, Plus, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import SectionCard from '../../../components/sections/SectionCard.jsx';
-import Button from '../../../components/ui/Button.jsx';
-import { createDepartment, deleteDepartment, getAllDepartments, updateDepartment } from '../../../services/departmentService.js';
+import SectionCard from "../components/sections/SectionCard.jsx";
+import Button from "../components/ui/Button.jsx";
+import { createDepartment, deleteDepartment, getAllDepartments, updateDepartment } from "../services/departmentService.js";
 
 const emptyForm = { name: '', description: '', hospital: '', location: '', phone: '', email: '' };
 
