@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { DoctorContext } from '../contexts/doctorContext.js';
+import { DoctorContext } from '../contexts/DoctorContext.jsx';
 
 export const useDoctorContext = () => {
   const context = useContext(DoctorContext);

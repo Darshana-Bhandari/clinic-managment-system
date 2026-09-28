@@ -1,22 +1,18 @@
-
-import { useEffect, useMemo, useState } from 'react';
+import { useState, useMemo } from 'react';
 import { SearchX, ChevronLeft, ChevronRight } from 'lucide-react';
 import DoctorCard from './DoctorCard';
-import { doctorsData } from '../../utils/dummyData';
+import { useDoctorContext } from '../../hooks/useDoctorContext.js';
 
 const DoctorsList = ({ searchQuery, filters }) => {
+  const { doctors, loading, error } = useDoctorContext();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, filters]);
 
   const filteredDoctors = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const queryTokens = normalizedQuery.split(/\s+/).filter(Boolean);
 
-    return doctorsData.filter((doctor) => {
+    return doctors.filter((doctor) => {
       const searchableText = [
         doctor.name,
         doctor.specialty,
@@ -53,13 +49,31 @@ const DoctorsList = ({ searchQuery, filters }) => {
 
       return searchMatch && specialtyMatch && availabilityMatch && ratingMatch && experienceMatch;
     });
-  }, [searchQuery, filters]);
+  }, [doctors, searchQuery, filters]);
 
   const totalPages = Math.ceil(filteredDoctors.length / itemsPerPage);
+  const page = Math.min(currentPage, Math.max(totalPages, 1));
   const paginatedDoctors = filteredDoctors.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
   );
+
+  if (loading) {
+    return (
+      <div className="card flex min-h-72 items-center justify-center p-12 text-center">
+        <p className="text-sm font-medium text-slate-500">Loading doctors...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card flex flex-col items-center p-12 text-center">
+        <h3 className="text-xl font-bold text-slate-800 dark:text-white">Unable to load doctors</h3>
+        <p className="mt-2 max-w-md text-slate-500">{error}</p>
+      </div>
+    );
+  }
 
   if (filteredDoctors.length === 0) {
     return (
@@ -83,7 +97,7 @@ const DoctorsList = ({ searchQuery, filters }) => {
           <span className="font-semibold text-slate-900 dark:text-white">{filteredDoctors.length}</span> doctors
         </p>
         {filteredDoctors.length > itemsPerPage && (
-          <p className="text-sm text-slate-500">Page {currentPage} of {totalPages}</p>
+          <p className="text-sm text-slate-500">Page {page} of {totalPages}</p>
         )}
       </div>
 
@@ -97,7 +111,7 @@ const DoctorsList = ({ searchQuery, filters }) => {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-1.5">
           <button
             onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
+            disabled={page === 1}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition-colors hover:border-primary-300 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300"
             aria-label="Previous page"
           >
@@ -107,11 +121,11 @@ const DoctorsList = ({ searchQuery, filters }) => {
           {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
             let pageNum;
             if (totalPages <= 5) pageNum = i + 1;
-            else if (currentPage <= 3) pageNum = i + 1;
-            else if (currentPage >= totalPages - 2) pageNum = totalPages - 4 + i;
-            else pageNum = currentPage - 2 + i;
+            else if (page <= 3) pageNum = i + 1;
+            else if (page >= totalPages - 2) pageNum = totalPages - 4 + i;
+            else pageNum = page - 2 + i;
 
-            const active = currentPage === pageNum;
+            const active = page === pageNum;
             return (
               <button
                 key={pageNum}
@@ -129,7 +143,7 @@ const DoctorsList = ({ searchQuery, filters }) => {
 
           <button
             onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-            disabled={currentPage === totalPages}
+            disabled={page === totalPages}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition-colors hover:border-primary-300 hover:text-primary-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300"
             aria-label="Next page"
           >
